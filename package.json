@@ -1,0 +1,22 @@
+{
+  "name": "shopify-autotest",
+  "version": "1.0.0",
+  "description": "Playwright automation tests for Shopify apps",
+  "main": "index.js",
+  "scripts": {
+    "auth": "playwright test --project=setup",
+    "auth:reset": "rm -f .auth/session.json && playwright test --project=setup",
+    "test": "playwright test --project=chromium",
+    "test:avada-plaza": "playwright test --project=chromium tests/avada-plaza/",
+    "test:ui": "playwright test --ui",
+    "test:headed": "playwright test --project=chromium --headed",
+    "report": "playwright show-report"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@playwright/test": "^1.58.2",
+    "@types/node": "^25.4.0"
+  }
+}
