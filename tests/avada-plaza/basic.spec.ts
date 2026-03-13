@@ -6,12 +6,10 @@
  * NOTE: Trước khi chạy, cần tìm đúng APP_HANDLE:
  *   1. Vào https://admin.shopify.com/store/dophuc-store/apps
  *   2. Click vào Avada Plaza
- *   3. Nhìn URL: .../apps/[APP_HANDLE] - copy phần đó vào bên dưới
+ *   3. Nhìn URL: .../apps/[APP_HANDLE] - copy phần đó vào .env
  */
 import { test, expect } from '@playwright/test';
-import { goToApp, waitForAppLoad, ADMIN_BASE } from '../../helpers/shopify';
-
-const APP_HANDLE = 'seo-pizza-app-phucdm';
+import { goToApp, waitForAppLoad, ADMIN_BASE, APP_HANDLE } from '../../helpers/shopify';
 
 test.describe('Avada Plaza - Kiểm tra cơ bản', () => {
   test('app load được trong Shopify Admin', async ({ page }) => {

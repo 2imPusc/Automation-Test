@@ -9,9 +9,7 @@
  * Chạy `npm run test:headed` để xem visual khi debug.
  */
 import { test, expect, Page, FrameLocator } from '@playwright/test';
-import { goToApp } from '../../helpers/shopify';
-
-const APP_HANDLE = 'seo-pizza-app-phucdm';
+import { goToApp, APP_HANDLE } from '../../helpers/shopify';
 
 // ─── Helper ─────────────────────────────────────────────────────────────────
 

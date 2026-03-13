@@ -3,9 +3,14 @@
  *
  * Các utility function để làm việc với Shopify Admin + embedded app iframe
  */
+import { config } from 'dotenv';
 import { Page, FrameLocator } from '@playwright/test';
 
-export const STORE_HANDLE = 'dophuc-store';
+// Load environment variables
+config();
+
+export const STORE_HANDLE = process.env.STORE_HANDLE || 'dophuc-store';
+export const APP_HANDLE = process.env.APP_HANDLE || 'seo-pizza-app-phucdm';
 export const ADMIN_BASE = `https://admin.shopify.com/store/${STORE_HANDLE}`;
 
 /**
