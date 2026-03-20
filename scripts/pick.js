@@ -15,7 +15,8 @@ const MENU = [
   { label: 'Blogs only',                       cmd: ['playwright', 'test', '--project=chromium', 'tests/blogs/'] },
   { label: 'Smoke tests only (fast ⚡)',       cmd: ['playwright', 'test', '--project=chromium', '--grep', '@smoke'] },
   { label: 'Open UI mode (debug 🔍)',          cmd: ['playwright', 'test', '--ui'] },
-  { label: '🤖 Generate new test with AI',     cmd: ['node', 'scripts/generate.js'] },
+  { label: '🤖 Generate new test with AI',       cmd: ['node', 'scripts/generate.js'] },
+  { label: '📸 Capture app snapshots (for AI)', cmd: ['node', 'scripts/snapshot.js'] },
 ];
 
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout });

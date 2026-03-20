@@ -13,6 +13,9 @@ node_modules/
 .env*
 !.env.example
 
+# App snapshots (chứa screenshot store thật — không commit)
+snapshots/
+
 # Logs
 *.log
 npm-debug.log*

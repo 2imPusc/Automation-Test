@@ -141,7 +141,25 @@ Nhập số và nhấn Enter.
 
 ---
 
-## 5. Tạo test mới bằng AI
+## 5. Chụp snapshot app (tùy chọn nhưng nên làm)
+
+> Giúp AI "nhìn thấy" UI thật → viết selector chính xác hơn, ít phải sửa tay.
+
+```bash
+npm run snapshot
+```
+
+Wizard sẽ hỏi trang nào cần chụp thêm. Browser sẽ mở và tự chụp từng trang.
+Screenshots + DOM info được lưu vào `snapshots/` (không commit lên git).
+
+**Nên chạy lại khi:**
+- UI app thay đổi (deploy mới)
+- Thêm trang/section mới vào app
+- Lần đầu setup dự án
+
+---
+
+## 6. Tạo test mới bằng AI
 
 > Không cần biết code. Chỉ cần **mô tả bằng tiếng Việt** những gì cần test.
 
@@ -216,7 +234,7 @@ và không có lỗi khi load
 
 ---
 
-## 6. Chạy trên nhiều môi trường
+## 7. Chạy trên nhiều môi trường
 
 Hữu ích khi cần test trên staging trước khi lên production.
 
@@ -250,7 +268,7 @@ npm run test:prod      # chạy test trên production
 
 ---
 
-## 7. Xem báo cáo kết quả
+## 8. Xem báo cáo kết quả
 
 ```bash
 npm run report
@@ -271,7 +289,7 @@ Khi một test fail, click vào test đó để xem:
 
 ---
 
-## 8. Xử lý sự cố thường gặp
+## 9. Xử lý sự cố thường gặp
 
 ### Test fail do "Authentication" / "Not logged in"
 
@@ -321,7 +339,11 @@ npm install
 Trước khi test:
   npm run test:smoke          → kiểm tra nhanh mọi thứ OK
 
+Khi UI app thay đổi:
+  npm run snapshot            → chụp lại UI mới để AI dùng
+
 Khi test một feature mới:
+  npm run snapshot            → chụp UI trước (nếu chưa có)
   npm run test:generate       → mô tả → AI tạo test → chạy luôn
 
 Khi deploy:

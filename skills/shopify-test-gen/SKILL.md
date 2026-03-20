@@ -20,6 +20,12 @@ fixtures/index.ts                   ← available fixtures
 tests/avada-plaza/compress.spec.ts  ← canonical spec example
 ```
 
+**If UI Snapshots are provided in the prompt:**
+- Prioritise button/input/link names from the DOM info — they are extracted from the real app
+- Read the screenshot file (e.g. `snapshots/avadaPlaza/home.png`) to visually understand the UI
+- Use exact text matches: `getByRole('button', { name: 'Optimize now' })` beats guessing
+- Only fall back to CSS/attribute selectors if role+name is not unique
+
 ### 2. Analyse the description
 
 Identify: **which app** (avadaPlaza / seo / blogs), **which page/section**, **actions + assertions needed**, and **whether a Page Object already exists** in `helpers/pages/`.
