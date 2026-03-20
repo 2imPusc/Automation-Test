@@ -10,6 +10,22 @@ Format theo [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.3.0] — 2026-03-20
+
+### Added — Phase A+B: AI Test Generator
+
+- **`npm run test:generate`**: CLI wizard để sinh Playwright test từ mô tả tự nhiên
+  - Nhận mô tả bằng tiếng Việt hoặc tiếng Anh
+  - Claude Code đọc codebase, tạo spec file + Page Object tự động
+  - Hỏi có muốn chạy test ngay sau khi sinh xong
+- **`skills/shopify-test-gen/SKILL.md`**: skill file dạy Claude Code cách sinh test đúng pattern
+  - 7 bước rõ ràng: đọc context → phân tích → quyết định → viết POM → viết spec → validate → báo cáo
+  - Rules bắt buộc: không hardcode handle, dùng iframe locator, tag @smoke
+- **`skills/shopify-test-gen/examples/`**: ví dụ input/output làm reference
+- **`test:pick`**: thêm option "🤖 Generate new test with AI" vào menu
+
+---
+
 ## [1.2.0] — 2026-03-20
 
 ### Added — Phase 4: Multi-environment & Interactive CLI

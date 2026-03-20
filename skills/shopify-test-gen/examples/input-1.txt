@@ -1,0 +1,8 @@
+App: Avada Plaza
+Trang: Settings
+Flow:
+- Mở trang Settings
+- Kiểm tra các field hiển thị đúng (Compression Quality, Auto Optimize toggle)
+- Thay đổi Compression Quality
+- Click Save
+- Kiểm tra toast "Settings saved" xuất hiện
