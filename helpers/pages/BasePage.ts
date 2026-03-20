@@ -1,4 +1,4 @@
-import { Page, FrameLocator, Locator } from '@playwright/test';
+import { test, Page, FrameLocator, Locator } from '@playwright/test';
 
 /**
  * Base Page Object providing common Playwright helpers for Shopify embedded apps.
@@ -17,21 +17,40 @@ export class BasePage {
   }
 
   /**
+   * Wrap an async action in a named Playwright test step for better HTML report output.
+   * @param name - Step name shown in the Playwright HTML report
+   * @param fn - Async action to execute inside the step
+   */
+  protected async step<T>(name: string, fn: () => Promise<T>): Promise<T> {
+    return test.step(name, fn);
+  }
+
+  /**
    * Wait for a locator to become visible.
+   * Throws a descriptive error on timeout instead of a generic Playwright error.
    * @param locator - The locator to wait for
    * @param timeout - Timeout in ms (default: 15000)
    */
   async waitForVisible(locator: Locator, timeout = 15000): Promise<void> {
-    await locator.waitFor({ state: 'visible', timeout });
+    try {
+      await locator.waitFor({ state: 'visible', timeout });
+    } catch {
+      throw new Error(`[${this.constructor.name}] waitForVisible timed out after ${timeout}ms`);
+    }
   }
 
   /**
    * Wait for a locator to become hidden.
+   * Throws a descriptive error on timeout instead of a generic Playwright error.
    * @param locator - The locator to wait for
    * @param timeout - Timeout in ms (default: 15000)
    */
   async waitForHidden(locator: Locator, timeout = 15000): Promise<void> {
-    await locator.waitFor({ state: 'hidden', timeout });
+    try {
+      await locator.waitFor({ state: 'hidden', timeout });
+    } catch {
+      throw new Error(`[${this.constructor.name}] waitForHidden timed out after ${timeout}ms`);
+    }
   }
 
   /**

@@ -13,7 +13,7 @@ import { goToApp, waitForAppLoad } from '../../helpers/shopify';
 import { APPS } from '../../helpers/apps';
 
 test.describe('Avada Plaza - Kiểm tra cơ bản', () => {
-  test('app load được trong Shopify Admin', async ({ page }) => {
+  test('app load được trong Shopify Admin @smoke', async ({ page }) => {
     const frame = await goToApp(page, APPS.avadaPlaza.handle);
 
     await waitForAppLoad(frame);

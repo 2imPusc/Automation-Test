@@ -64,14 +64,16 @@ export class ImageManagerPage extends BasePage {
    * Sidekick can auto-open and obscure the app UI.
    */
   async closeShopifySidekick(): Promise<void> {
-    const sidekick = this.page.getByRole('button', { name: 'Close Sidekick' });
-    const hideBtns = this.page.getByRole('button', { name: 'hide' });
+    return this.step('ImageManager: close Shopify Sidekick if open', async () => {
+      const sidekick = this.page.getByRole('button', { name: 'Close Sidekick' });
+      const hideBtns = this.page.getByRole('button', { name: 'hide' });
 
-    if (await sidekick.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await sidekick.click();
-    } else if (await hideBtns.nth(1).isVisible({ timeout: 2000 }).catch(() => false)) {
-      await hideBtns.nth(1).click();
-    }
+      if (await sidekick.isVisible({ timeout: 3000 }).catch(() => false)) {
+        await sidekick.click();
+      } else if (await hideBtns.nth(1).isVisible({ timeout: 2000 }).catch(() => false)) {
+        await hideBtns.nth(1).click();
+      }
+    });
   }
 
   /**
@@ -79,53 +81,67 @@ export class ImageManagerPage extends BasePage {
    * Assumes the app is already open (goToApp was called externally).
    */
   async goTo(): Promise<void> {
-    await this.closeShopifySidekick();
-    await this.page.getByRole('link', { name: 'Image manager' }).click();
-    await this.waitForLoad();
+    return this.step('ImageManager: navigate to Image Manager', async () => {
+      await this.closeShopifySidekick();
+      await this.page.getByRole('link', { name: 'Image manager' }).click();
+      await this.waitForLoad();
+    });
   }
 
   /**
    * Wait for the Image Manager content to finish loading.
    */
   async waitForLoad(): Promise<void> {
-    await this.frame.getByText('Optimize now').waitFor({ state: 'visible', timeout: 20000 });
+    return this.step('ImageManager: wait for content to load', async () => {
+      await this.frame.getByText('Optimize now').waitFor({ state: 'visible', timeout: 20000 });
+    });
   }
 
   /**
    * Click the "Optimize now" button to open the optimize panel.
    */
   async clickOptimizeNow(): Promise<void> {
-    await this.frame.getByText('Optimize now').click();
+    return this.step('ImageManager: click Optimize now', async () => {
+      await this.frame.getByText('Optimize now').click();
+    });
   }
 
   /**
    * Click the "Optimize all" button to start auto optimization.
    */
   async clickOptimizeAll(): Promise<void> {
-    await this.optimizeAllButton.click();
+    return this.step('ImageManager: click Optimize all', async () => {
+      await this.optimizeAllButton.click();
+    });
   }
 
   /**
    * Switch the Image Manager to manual compress mode.
    */
   async switchToManualMode(): Promise<void> {
-    await this.frame.getByText('Optimize manually').click();
+    return this.step('ImageManager: switch to manual mode', async () => {
+      await this.frame.getByText('Optimize manually').click();
+    });
   }
 
   /**
    * Select the first image in the image list by clicking its row checkbox.
    */
   async selectFirstImage(): Promise<void> {
-    const firstImageCheckbox = this.frame.getByRole('cell', { name: 'Select Item' }).first();
-    await firstImageCheckbox.waitFor({ state: 'visible', timeout: 10000 });
-    await firstImageCheckbox.click();
+    return this.step('ImageManager: select first image', async () => {
+      const firstImageCheckbox = this.frame.getByRole('cell', { name: 'Select Item' }).first();
+      await firstImageCheckbox.waitFor({ state: 'visible', timeout: 10000 });
+      await firstImageCheckbox.click();
+    });
   }
 
   /**
    * Click the "Compress image" button.
    */
   async clickCompressImage(): Promise<void> {
-    await this.compressButton.click();
+    return this.step('ImageManager: click Compress image', async () => {
+      await this.compressButton.click();
+    });
   }
 
   /**
@@ -133,6 +149,8 @@ export class ImageManagerPage extends BasePage {
    * @param timeout - Timeout in ms (default: 60000 to allow slow compress operations)
    */
   async waitForSkeletonGone(timeout = 60000): Promise<void> {
-    await this.waitForHidden(this.skeleton, timeout);
+    return this.step('ImageManager: wait for skeleton to disappear', async () => {
+      await this.waitForHidden(this.skeleton, timeout);
+    });
   }
 }

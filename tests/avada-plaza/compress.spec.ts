@@ -7,17 +7,10 @@
  *
  * Chạy `npm run test:headed` để debug visual.
  */
-import { test, expect } from '@playwright/test';
-import { goToApp } from '../../helpers/shopify';
-import { APPS } from '../../helpers/apps';
-import { ImageManagerPage } from '../../helpers/pages/ImageManagerPage';
+import { test, expect } from '../../fixtures';
 
 test.describe('Avada Plaza - Image Manager', () => {
-  test('trang Image Manager hiển thị đúng thông tin', async ({ page }) => {
-    const frame = await goToApp(page, APPS.avadaPlaza.handle);
-    const imageManager = new ImageManagerPage(page, frame);
-    await imageManager.goTo();
-
+  test('trang Image Manager hiển thị đúng thông tin @smoke', async ({ imageManager }) => {
     await expect(imageManager.frame.getByText('Total images')).toBeVisible();
     await expect(imageManager.frame.getByText('Original size')).toBeVisible();
     await expect(imageManager.frame.getByText('Optimize now')).toBeVisible();
@@ -27,11 +20,7 @@ test.describe('Avada Plaza - Image Manager', () => {
 });
 
 test.describe('Avada Plaza - Auto Optimize', () => {
-  test('click Optimize all → toast bắt đầu + progress hiện ra', async ({ page }) => {
-    const frame = await goToApp(page, APPS.avadaPlaza.handle);
-    const imageManager = new ImageManagerPage(page, frame);
-    await imageManager.goTo();
-
+  test('click Optimize all → toast bắt đầu + progress hiện ra', async ({ imageManager }) => {
     await imageManager.clickOptimizeNow();
     await imageManager.clickOptimizeAll();
 
@@ -44,11 +33,7 @@ test.describe('Avada Plaza - Auto Optimize', () => {
 });
 
 test.describe('Avada Plaza - Manual Compress', () => {
-  test('chọn ảnh → Compress image → skeleton → hiện kết quả', async ({ page }) => {
-    const frame = await goToApp(page, APPS.avadaPlaza.handle);
-    const imageManager = new ImageManagerPage(page, frame);
-    await imageManager.goTo();
-
+  test('chọn ảnh → Compress image → skeleton → hiện kết quả', async ({ imageManager }) => {
     await imageManager.switchToManualMode();
     await imageManager.selectFirstImage();
     await imageManager.clickCompressImage();
@@ -61,11 +46,7 @@ test.describe('Avada Plaza - Manual Compress', () => {
     console.log('✅ Skeleton biến mất - kết quả đã load');
   });
 
-  test('không chọn ảnh → button Compress image bị disabled', async ({ page }) => {
-    const frame = await goToApp(page, APPS.avadaPlaza.handle);
-    const imageManager = new ImageManagerPage(page, frame);
-    await imageManager.goTo();
-
+  test('không chọn ảnh → button Compress image bị disabled', async ({ imageManager }) => {
     await imageManager.switchToManualMode();
 
     await expect(imageManager.compressButton).toBeVisible({ timeout: 10000 });
