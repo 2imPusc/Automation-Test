@@ -16,7 +16,8 @@ const MENU = [
   { label: 'Smoke tests only (fast ⚡)',       cmd: ['playwright', 'test', '--project=chromium', '--grep', '@smoke'] },
   { label: 'Open UI mode (debug 🔍)',          cmd: ['playwright', 'test', '--ui'] },
   { label: '🤖 Generate new test with AI',       cmd: ['node', 'scripts/generate.js'] },
-  { label: '📸 Capture app snapshots (for AI)', cmd: ['node', 'scripts/snapshot.js'] },
+  { label: '📸 Capture app snapshots (for AI)',  cmd: ['node', 'scripts/snapshot.js'] },
+  { label: '🔬 Scan source code (for AI)',        cmd: ['node', 'scripts/scan-source.js', '--help'] },
 ];
 
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout });

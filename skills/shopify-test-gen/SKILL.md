@@ -20,11 +20,24 @@ fixtures/index.ts                   ← available fixtures
 tests/avada-plaza/compress.spec.ts  ← canonical spec example
 ```
 
+**If App Context is provided in the prompt:**
+- This contains exact UI strings extracted from real source code — use them directly
+- Toast assertions: use exact text from "Toast Messages" section (e.g. `"Settings updated successfully"`)
+- Button selectors: use exact labels from "Button / Action Labels" section
+- `data-testid`: use `getByTestId()` when available — most stable selector
+
 **If UI Snapshots are provided in the prompt:**
-- Prioritise button/input/link names from the DOM info — they are extracted from the real app
-- Read the screenshot file (e.g. `snapshots/avadaPlaza/home.png`) to visually understand the UI
+- Prioritise button/input/link names from the DOM info — extracted from the real app
+- Read the screenshot file to visually understand the UI layout
 - Use exact text matches: `getByRole('button', { name: 'Optimize now' })` beats guessing
 - Only fall back to CSS/attribute selectors if role+name is not unique
+
+**Selector priority (highest → lowest):**
+1. `getByTestId('...')` — if data-testid exists in App Context
+2. `getByRole('button/link/...', { name: '...' })` — with exact label from App Context
+3. `getByText('...')` — with exact text from App Context
+4. `getByLabel('...')` — for form inputs
+5. CSS selector — last resort only
 
 ### 2. Analyse the description
 

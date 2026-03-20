@@ -16,6 +16,9 @@ node_modules/
 # App snapshots (chứa screenshot store thật — không commit)
 snapshots/
 
+# Auto-scanned context files (generated, not curated)
+skills/shopify-test-gen/references/app-context/*.scanned.md
+
 # Logs
 *.log
 npm-debug.log*
