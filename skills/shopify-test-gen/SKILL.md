@@ -11,6 +11,7 @@ Generate Playwright tests from a natural language description of a feature or fl
 
 ### 1. Read context files (required before writing any code)
 
+**Step 1a — codebase patterns (always):**
 ```
 helpers/pages/BasePage.ts
 helpers/pages/ImageManagerPage.ts   ← canonical POM example
@@ -20,28 +21,32 @@ fixtures/index.ts                   ← available fixtures
 tests/avada-plaza/compress.spec.ts  ← canonical spec example
 ```
 
-**If App Context is provided in the prompt:**
-- This contains exact UI strings extracted from real source code — use them directly
-- Toast assertions: use exact text from "Toast Messages" section (e.g. `"Settings updated successfully"`)
-- Button selectors: use exact labels from "Button / Action Labels" section
-- `data-testid`: use `getByTestId()` when available — most stable selector
+**Step 1b — app context (progressive disclosure):**
 
-**If UI Snapshots are provided in the prompt:**
-- Prioritise button/input/link names from the DOM info — extracted from the real app
+1. Read `skills/shopify-test-gen/references/app-context/[app-folder]/_overview.md`
+   → understand which pages exist, which feature file maps to the request
+2. Load **only** the one matching feature file (e.g. `image-manager.md`)
+   → do NOT load all feature files — other pages are irrelevant noise
+
+App context folder per app:
+- Avada Plaza → `references/app-context/avada-plaza/`
+- SEO → `references/app-context/seo/` _(if exists)_
+- Blogs → `references/app-context/blogs/` _(if exists)_
+
+**Step 1c — UI snapshots (if provided in prompt):**
+- Use button/input/link names from DOM info — extracted from real app
 - Read the screenshot file to visually understand the UI layout
-- Use exact text matches: `getByRole('button', { name: 'Optimize now' })` beats guessing
-- Only fall back to CSS/attribute selectors if role+name is not unique
 
 **Selector priority (highest → lowest):**
-1. `getByTestId('...')` — if data-testid exists in App Context
-2. `getByRole('button/link/...', { name: '...' })` — with exact label from App Context
-3. `getByText('...')` — with exact text from App Context
+1. `getByTestId('...')` — if data-testid in App Context
+2. `getByRole('button/link/...', { name: '...' })` — exact label from App Context
+3. `getByText('...')` — exact text from App Context
 4. `getByLabel('...')` — for form inputs
 5. CSS selector — last resort only
 
 ### 2. Analyse the description
 
-Identify: **which app** (avadaPlaza / seo / blogs), **which page/section**, **actions + assertions needed**, and **whether a Page Object already exists** in `helpers/pages/`.
+Identify: **which app**, **which page/feature** (use `_overview.md` to map), **actions + assertions needed**, **existing POM** in `helpers/pages/`.
 
 ### 3. Decide what to create
 
@@ -58,9 +63,9 @@ Follow the templates in `references/templates.md`.
 Key rules:
 - **Never hardcode handles** — use `APPS.[key].handle` from `helpers/apps.ts`
 - **Never hardcode store URL** — use `ADMIN_BASE` from `helpers/shopify.ts`
-- **Iframe selectors** — always use `frame.locator()`, never `page.locator()` for app content
-- **Selector priority** — `getByRole()` > `getByText()` > `getByLabel()` > CSS (last resort)
-- **Unsure about selector?** — add `// TODO: verify selector` comment and use best guess
+- **Iframe selectors** — always `frame.locator()`, never `page.locator()` for app content
+- **Toast text** — use exact string from feature file's "Toast Messages" section
+- **Button name** — use exact label from feature file's "Buttons" section
 - **Wrap actions in `test.step()`** — improves HTML report readability
 - **Tag first test `@smoke`** — included in `npm run test:smoke`
 - **Add `console.log('✅ ...')`** after each milestone
@@ -77,16 +82,16 @@ Fix any TypeScript/syntax errors before reporting.
 
 ```
 ✅ Created:
-  - helpers/pages/SettingsPage.ts  (new POM)
-  - tests/avada-plaza/settings.spec.ts  (3 test cases)
+  - helpers/pages/ImageManagerPage.ts  (updated POM)
+  - tests/avada-plaza/compress.spec.ts  (3 test cases)
 
 📋 Test cases:
-  1. Settings page loads correctly @smoke
-  2. Save settings → success toast appears
-  3. Required field empty → validation error shown
+  1. Image Manager loads correctly @smoke
+  2. Optimize all → toast "Optimization started" appears
+  3. Select image → Compress → toast "Image optimized successfully"
 
 ▶ Run:
-  npx playwright test tests/avada-plaza/settings.spec.ts --headed
+  npx playwright test tests/avada-plaza/compress.spec.ts --headed
 ```
 
 ## Reference

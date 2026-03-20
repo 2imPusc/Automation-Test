@@ -218,6 +218,8 @@ def main():
     parser.add_argument('--src', required=True, help='Path to app source root')
     parser.add_argument('--locale', help='Path to origin.json locale file (auto-detected if omitted)')
     parser.add_argument('--out', help='Output .md path (default: stdout)')
+    parser.add_argument('--split-by-page', action='store_true',
+                        help='Split output into one file per pages/ subfolder instead of single file')
     args = parser.parse_args()
 
     src_dir = Path(args.src)
@@ -248,7 +250,40 @@ def main():
         **locale_data,
     })
 
-    if args.out:
+    if args.split_by_page:
+        # Split mode: one file per pages/ subfolder
+        pages_dir = src_dir / 'pages'
+        if not pages_dir.exists():
+            print(f'❌ pages/ dir not found at {pages_dir}', file=sys.stderr)
+            sys.exit(1)
+
+        out_dir = Path(args.out) if args.out else Path(f'skills/shopify-test-gen/references/app-context/{args.app_key}')
+        out_dir.mkdir(parents=True, exist_ok=True)
+
+        page_folders = sorted([d for d in pages_dir.iterdir() if d.is_dir()])
+        print(f'  Splitting into {len(page_folders)} page files...', file=sys.stderr)
+
+        for page_folder in page_folders:
+            page_locale = scan_locale(locale_path)
+            page_test_ids = scan_test_ids(page_folder)
+            page_routes = scan_routes(page_folder)
+
+            page_md = generate_md(args.app_key, f'{args.app_name} / {page_folder.name}', {
+                'routes': page_routes,
+                'test_ids': page_test_ids,
+                'nav_links': [],
+                **page_locale,
+            })
+
+            slug = re.sub(r'(?<=[a-z])(?=[A-Z])', '-', page_folder.name).lower()
+            page_file = out_dir / f'{slug}.scanned.md'
+            page_file.write_text(page_md, encoding='utf-8')
+            print(f'  ✅ {page_file.name} ({len(page_test_ids)} test-ids, {len(page_routes)} routes)', file=sys.stderr)
+
+        print(f'\n✅ Split into {len(page_folders)} files in {out_dir}', file=sys.stderr)
+        print(f'💡 Review .scanned.md files → merge into curated feature files', file=sys.stderr)
+
+    elif args.out:
         out_path = Path(args.out)
         out_path.parent.mkdir(parents=True, exist_ok=True)
         out_path.write_text(md, encoding='utf-8')
