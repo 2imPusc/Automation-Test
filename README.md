@@ -1,135 +1,238 @@
 # Shopify Automation Tests
 
-Dự án automation testing cho các ứng dụng Shopify sử dụng Playwright.
+Dự án automation testing cho các ứng dụng Shopify sử dụng [Playwright](https://playwright.dev).
 
-## Mục đích
+## Tính năng
 
-- Tự động hóa việc test các tính năng của ứng dụng Shopify
-- Kiểm tra UI/UX và chức năng trong Shopify Admin
-- Phát hiện lỗi sớm trong quá trình phát triển
+- ✅ **Page Object Model** — selectors tập trung, dễ maintain khi UI thay đổi
+- ✅ **Multi-app support** — test nhiều app (Avada Plaza, SEO, Blogs) từ cùng 1 dự án
+- ✅ **Custom Fixtures** — setup tự động, viết test gọn hơn
+- ✅ **Smoke tests** — chạy nhanh < 60s trước mỗi deploy
+- ✅ **Multi-environment** — local / staging / production
+- ✅ **Interactive CLI** — setup wizard + test picker, không cần nhớ commands
 
-## Cài đặt
+---
 
-1. **Clone repository:**
-   ```bash
-   git clone https://github.com/2imPusc/Automation-Test.git
-   cd shopify-autotest
-   ```
+## Cài đặt lần đầu
 
-2. **Cài đặt dependencies:**
-   ```bash
-   npm install
-   ```
+### 1. Clone & cài dependencies
 
-3. **Cấu hình môi trường:**
-   - Copy file `.env.example` thành `.env`:
-     ```bash
-     cp .env.example .env
-     ```
-   - Chỉnh sửa `.env` với thông tin của bạn:
-     ```env
-     STORE_HANDLE=your-shopify-store-handle
-     APP_HANDLE=your-app-handle-in-shopify
-     ```
+```bash
+git clone https://github.com/2imPusc/Automation-Test.git
+cd shopify-autotest
+npm install
+```
 
-## Cấu hình chi tiết
+### 2. Setup môi trường (cách nhanh)
 
-### Tìm STORE_HANDLE
-- Vào Shopify Admin: `https://admin.shopify.com/store/YOUR_STORE`
-- `YOUR_STORE` chính là STORE_HANDLE
+```bash
+npm run setup
+```
 
-### Tìm APP_HANDLE
-1. Vào Apps list: `https://admin.shopify.com/store/YOUR_STORE/apps`
-2. Click vào app cần test
-3. Nhìn URL: `.../apps/YOUR_APP_HANDLE/embed/...`
-4. `YOUR_APP_HANDLE` chính là APP_HANDLE
+Wizard sẽ hỏi từng bước và tự ghi file `.env`. Không cần tự tạo thủ công.
 
-## Chạy Tests
+> **Cách thủ công:** Copy `.env.example` → `.env` rồi điền thông tin vào.
 
-### Setup Authentication (chạy 1 lần đầu)
+### 3. Login Shopify
+
 ```bash
 npm run auth
 ```
-Lệnh này sẽ mở browser để bạn login vào Shopify và lưu session.
 
-### Reset Authentication
+Browser sẽ mở để bạn đăng nhập. Session được lưu tự động vào `.auth/session.json`.
+
+### 4. Chạy thử
+
 ```bash
-npm run auth:reset
+npm run test:smoke
 ```
 
-### Chạy tất cả tests
+---
+
+## Tìm App Handle
+
+1. Vào Shopify Admin → Apps
+2. Click vào app cần test
+3. Nhìn URL: `.../apps/[APP_HANDLE]/...`
+4. Copy phần `APP_HANDLE` vào `.env`
+
+---
+
+## Chạy Tests
+
+### Cách dễ nhất — Test Picker
+
 ```bash
-npm run test
+npm run test:pick
 ```
 
-### Chạy tests cho Avada Plaza
-```bash
-npm run test:avada-plaza
+```
+🎭 Which tests do you want to run?
+────────────────────────────────────
+  1. All tests
+  2. Avada Plaza only
+  3. SEO only
+  4. Blogs only
+  5. Smoke tests only (fast ⚡)
+  6. Open UI mode (debug 🔍)
 ```
 
-### Chạy tests với UI mode (debug)
-```bash
-npm run test:ui
+### Chạy trực tiếp
+
+| Command | Mô tả |
+|---|---|
+| `npm run test` | Tất cả tests |
+| `npm run test:avada-plaza` | Chỉ Avada Plaza |
+| `npm run test:seo` | Chỉ SEO |
+| `npm run test:blogs` | Chỉ Blogs |
+| `npm run test:smoke` | Smoke tests (< 60s) |
+| `npm run test:ui` | UI mode để debug |
+| `npm run test:headed` | Headed browser (thấy browser chạy) |
+| `npm run report` | Xem HTML report |
+
+---
+
+## Multi-Environment
+
+Hỗ trợ chạy test trên nhiều store khác nhau.
+
+### Cấu hình
+
+Tạo file `.env.staging` và `.env.prod` (dựa theo `.env.example`):
+
+```env
+# .env.staging
+STORE_HANDLE=your-staging-store
+AVADA_PLAZA_HANDLE=your-avada-plaza-handle
 ```
 
-### Chạy tests với headed browser (thấy browser)
+### Login từng env
+
 ```bash
-npm run test:headed
+npm run auth:staging   # login staging
+npm run auth:prod      # login production
 ```
 
-### Xem báo cáo
+### Chạy test theo env
+
 ```bash
-npm run report
+npm run test:staging   # test trên staging store
+npm run test:prod      # test trên production store
 ```
+
+---
 
 ## Cấu trúc dự án
 
 ```
 shopify-autotest/
-├── .env                    # Cấu hình môi trường (không commit)
-├── .env.example           # Template cấu hình
+├── .env                      # Cấu hình local (không commit)
+├── .env.staging              # Cấu hình staging (không commit)
+├── .env.prod                 # Cấu hình production (không commit)
+├── .env.example              # Template cấu hình
+├── .auth/
+│   ├── session.json          # Session local (không commit)
+│   ├── session.staging.json  # Session staging (không commit)
+│   └── session.prod.json     # Session production (không commit)
+├── fixtures/
+│   └── index.ts              # Custom Playwright fixtures
 ├── helpers/
-│   └── shopify.ts         # Utility functions cho Shopify
+│   ├── apps.ts               # Registry các app (handles, names)
+│   ├── shopify.ts            # Utility functions (goToApp, waitForAppLoad)
+│   └── pages/
+│       ├── BasePage.ts       # Base class cho Page Objects
+│       └── ImageManagerPage.ts  # Page Object của Image Manager
+├── scripts/
+│   ├── setup.js              # Setup wizard (npm run setup)
+│   └── pick.js               # Interactive test picker (npm run test:pick)
 ├── tests/
-│   ├── auth.setup.ts      # Setup authentication
-│   ├── example.spec.ts    # Ví dụ test
-│   └── avada-plaza/       # Tests cho Avada Plaza app
-│       ├── basic.spec.ts  # Tests cơ bản
-│       └── compress.spec.ts # Tests nén ảnh
-├── playwright.config.ts   # Cấu hình Playwright
+│   ├── auth.setup.ts         # Setup authentication
+│   ├── example.spec.ts       # Ví dụ test
+│   ├── avada-plaza/
+│   │   ├── README.md
+│   │   ├── basic.spec.ts     # Smoke: app load, không crash
+│   │   └── compress.spec.ts  # Image Manager: auto + manual compress
+│   ├── seo/                  # Tests cho SEO app (chưa có)
+│   └── blogs/                # Tests cho Blogs app (chưa có)
+├── playwright.config.ts      # Cấu hình Playwright
 └── package.json
 ```
 
-## Lưu ý quan trọng
+---
 
-- **Authentication:** Phải chạy `npm run auth` trước khi chạy tests
-- **Environment:** Đừng commit file `.env` (đã được ignore)
-- **Selectors:** Có thể cần cập nhật selectors nếu UI app thay đổi
-- **Timeouts:** Tests có timeout 60s, có thể điều chỉnh trong `playwright.config.ts`
+## Viết Test Mới
+
+### Dùng fixture có sẵn
+
+```typescript
+// Import từ fixtures thay vì @playwright/test
+import { test, expect } from '../../fixtures';
+
+test('tên test @smoke', async ({ imageManager }) => {
+  // imageManager đã được setup sẵn, dùng luôn
+  await expect(imageManager.frame.getByText('Total images')).toBeVisible();
+  await imageManager.clickOptimizeNow();
+});
+```
+
+### Dùng Page Object trực tiếp
+
+```typescript
+import { test, expect } from '@playwright/test';
+import { goToApp } from '../../helpers/shopify';
+import { APPS } from '../../helpers/apps';
+import { ImageManagerPage } from '../../helpers/pages/ImageManagerPage';
+
+test('tên test', async ({ page }) => {
+  const frame = await goToApp(page, APPS.avadaPlaza.handle);
+  const imageManager = new ImageManagerPage(page, frame);
+  await imageManager.goTo();
+  // test logic...
+});
+```
+
+### Tag smoke test
+
+Thêm `@smoke` vào tên test để include vào `npm run test:smoke`:
+
+```typescript
+test('app load đúng @smoke', async ({ page }) => { ... });
+```
+
+---
 
 ## Troubleshooting
 
 ### Tests fail do authentication
+
 ```bash
 npm run auth:reset
 npm run auth
 ```
 
 ### Tests fail do selectors cũ
-- Chạy `npm run test:headed` để debug
-- Cập nhật selectors trong file test
+
+1. Chạy `npm run test:headed` để xem browser thực tế
+2. Cập nhật selectors trong `helpers/pages/ImageManagerPage.ts` (chỉ 1 file)
 
 ### Không tìm thấy app
-- Kiểm tra lại APP_HANDLE trong `.env`
-- Đảm bảo app đã được install trong store
+
+Kiểm tra `AVADA_PLAZA_HANDLE` (hoặc handle tương ứng) trong `.env`.
+
+### Session hết hạn
+
+```bash
+npm run auth:reset && npm run auth
+```
+
+---
 
 ## Contributing
 
 1. Fork repository
-2. Tạo branch mới: `git checkout -b feature/your-feature`
-3. Commit changes: `git commit -am 'Add some feature'`
-4. Push to branch: `git push origin feature/your-feature`
-5. Tạo Pull Request
+2. Tạo branch: `git checkout -b feature/ten-tinh-nang`
+3. Commit: `git commit -m 'feat: mô tả thay đổi'`
+4. Push & tạo Pull Request
 
 ## License
 
