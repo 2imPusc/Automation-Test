@@ -7,10 +7,16 @@
     "auth": "playwright test --project=setup",
     "auth:reset": "rm -f .auth/session.json && playwright test --project=setup",
     "test": "playwright test --project=chromium",
+    "test:app": "dotenv -e .env -- sh -c 'playwright test --project=chromium tests/$APP_HANDLE/'",
     "test:avada-plaza": "playwright test --project=chromium tests/avada-plaza/",
+    "test:seo": "playwright test --project=chromium tests/seo/",
+    "test:blogs": "playwright test --project=chromium tests/blogs/",
+    "test:smoke": "playwright test --project=chromium --grep @smoke",
     "test:ui": "playwright test --ui",
     "test:headed": "playwright test --project=chromium --headed",
-    "report": "playwright show-report"
+    "test:headed:app": "dotenv -e .env -- sh -c 'playwright test --project=chromium --headed tests/$APP_HANDLE/'",
+    "report": "playwright show-report",
+    "codegen": "dotenv -e .env -- sh -c 'playwright codegen --load-storage=.auth/session.json https://admin.shopify.com/store/$STORE_HANDLE/apps/$APP_HANDLE'"
   },
   "keywords": [],
   "author": "",
@@ -18,6 +24,7 @@
   "devDependencies": {
     "@playwright/test": "^1.58.2",
     "@types/node": "^25.4.0",
-    "dotenv": "^17.3.1"
+    "dotenv": "^17.3.1",
+    "dotenv-cli": "^8.0.0"
   }
 }
