@@ -127,7 +127,7 @@ async function checkAndSync(appKey, branch) {
     return { upToDate: false, updated: false, contextDir, error: `Repo không tồn tại: ${repoPath}\nChạy: npm run setup-apps` };
   }
 
-  // 2. Checkout branch
+  // 2. Checkout branch (nếu cần)
   console.log(`  📦 ${app.name} — branch: ${branch}`);
   const currentBranch = git('rev-parse --abbrev-ref HEAD', repoPath);
 
@@ -139,11 +139,30 @@ async function checkAndSync(appKey, branch) {
     }
   }
 
-  // 3. Git pull
-  console.log(`  ⬇️  Pulling latest...`);
-  git(`pull origin ${branch} --quiet`, repoPath);
+  // 3. LUÔN pull trước khi làm bất cứ điều gì khác
+  //    → đảm bảo context được extract từ code mới nhất, không bao giờ dùng code cũ
+  console.log(`  ⬇️  Pulling latest from origin/${branch}...`);
+  const pullResult = spawnSync('git', ['pull', 'origin', branch], {
+    cwd: repoPath,
+    stdio: 'pipe',
+    encoding: 'utf-8',
+  });
 
-  // 4. Lấy commit hiện tại
+  if (pullResult.status !== 0) {
+    // Pull fail không chặn hoàn toàn (có thể offline / no remote)
+    // nhưng warn rõ ràng
+    console.warn(`  ⚠️  Pull failed: ${(pullResult.stderr || '').trim().split('\n')[0]}`);
+    console.warn(`  → Tiếp tục với code hiện tại trên máy.`);
+  } else {
+    const pullMsg = (pullResult.stdout || '').trim();
+    if (pullMsg && pullMsg !== 'Already up to date.') {
+      console.log(`  ✅ Pulled: ${pullMsg.split('\n')[0]}`);
+    } else {
+      console.log(`  ✅ Already up to date.`);
+    }
+  }
+
+  // 4. Lấy commit SAU KHI pull
   const currentCommit = git('rev-parse --short HEAD', repoPath);
 
   // 5. So sánh với meta trong _overview.md
