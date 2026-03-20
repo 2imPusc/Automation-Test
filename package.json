@@ -12,9 +12,15 @@
     "test:seo": "playwright test --project=chromium tests/seo/",
     "test:blogs": "playwright test --project=chromium tests/blogs/",
     "test:smoke": "playwright test --project=chromium --grep @smoke",
+    "test:staging": "cross-env ENV=staging playwright test --project=chromium",
+    "test:prod": "cross-env ENV=prod playwright test --project=chromium",
+    "test:pick": "node scripts/pick.js",
     "test:ui": "playwright test --ui",
     "test:headed": "playwright test --project=chromium --headed",
     "test:headed:app": "dotenv -e .env -- sh -c 'playwright test --project=chromium --headed tests/$APP_HANDLE/'",
+    "auth:staging": "cross-env ENV=staging playwright test --project=setup",
+    "auth:prod": "cross-env ENV=prod playwright test --project=setup",
+    "setup": "node scripts/setup.js",
     "report": "playwright show-report",
     "codegen": "dotenv -e .env -- sh -c 'playwright codegen --load-storage=.auth/session.json https://admin.shopify.com/store/$STORE_HANDLE/apps/$APP_HANDLE'"
   },
@@ -24,6 +30,7 @@
   "devDependencies": {
     "@playwright/test": "^1.58.2",
     "@types/node": "^25.4.0",
+    "cross-env": "^10.1.0",
     "dotenv": "^17.3.1",
     "dotenv-cli": "^8.0.0"
   }

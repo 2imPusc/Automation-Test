@@ -1,7 +1,21 @@
 import { defineConfig, devices } from '@playwright/test';
 import path from 'path';
+import { config } from 'dotenv';
 
-const AUTH_FILE = path.join('.auth', 'session.json');
+// ── Environment switching ──────────────────────────────────────────────────
+// Set ENV variable to switch between environments:
+//   ENV=staging npm run test   → loads .env.staging
+//   ENV=prod    npm run test   → loads .env.prod
+//   (default)                  → loads .env
+const ENV = process.env.ENV ?? 'local';
+
+if (ENV !== 'local') {
+  config({ path: `.env.${ENV}`, override: true });
+  console.log(`[env] Running against: ${ENV}`);
+}
+
+// Auth file is env-aware so each environment has its own session
+const AUTH_FILE = path.join('.auth', ENV === 'local' ? 'session.json' : `session.${ENV}.json`);
 
 export default defineConfig({
   testDir: './tests',
