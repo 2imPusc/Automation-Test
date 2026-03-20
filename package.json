@@ -25,6 +25,8 @@
     "auth:staging": "cross-env ENV=staging playwright test --project=setup",
     "auth:prod": "cross-env ENV=prod playwright test --project=setup",
     "setup": "node scripts/setup.js",
+    "setup-apps": "node scripts/setup-apps.js",
+    "context-sync": "node scripts/context-sync.js",
     "report": "playwright show-report",
     "codegen": "dotenv -e .env -- sh -c 'playwright codegen --load-storage=.auth/session.json https://admin.shopify.com/store/$STORE_HANDLE/apps/$APP_HANDLE'"
   },

@@ -1,3 +1,11 @@
+---
+app: avadaPlaza
+branch: improve/dashboard
+commit: 2076acfd
+extracted_at: 2026-03-20
+src: /Users/avada/avada-image-optimizer/packages/assets/src
+---
+
 # Avada Plaza — Overview
 
 > Read this file first. Then load the specific feature file for the page being tested.

@@ -1,0 +1,27 @@
+{
+  "_comment": "Registry các app Shopify trên máy tester. Chạy `npm run setup-apps` để cấu hình.",
+  "avadaPlaza": {
+    "name": "Avada Plaza",
+    "repoPath": "/Users/avada/avada-image-optimizer",
+    "srcPath": "packages/assets/src",
+    "localePath": "packages/assets/src/locale/translations/origin.json",
+    "testDir": "tests/avada-plaza",
+    "contextDir": "skills/shopify-test-gen/references/app-context/avada-plaza"
+  },
+  "seo": {
+    "name": "Avada SEO",
+    "repoPath": "/Users/avada/seo",
+    "srcPath": "src",
+    "localePath": "src/locale/translations/origin.json",
+    "testDir": "tests/seo",
+    "contextDir": "skills/shopify-test-gen/references/app-context/seo"
+  },
+  "blogs": {
+    "name": "Avada Blogs",
+    "repoPath": "/Users/avada/blogs",
+    "srcPath": "src",
+    "localePath": "src/locale/translations/origin.json",
+    "testDir": "tests/blogs",
+    "contextDir": "skills/shopify-test-gen/references/app-context/blogs"
+  }
+}
