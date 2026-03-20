@@ -18,6 +18,7 @@
     "test:generate": "node scripts/generate.js",
     "snapshot": "node scripts/snapshot.js",
     "scan-source": "node scripts/scan-source.js",
+    "extract-context": "python3 skills/app-context-extractor/scripts/extract.py",
     "test:ui": "playwright test --ui",
     "test:headed": "playwright test --project=chromium --headed",
     "test:headed:app": "dotenv -e .env -- sh -c 'playwright test --project=chromium --headed tests/$APP_HANDLE/'",
