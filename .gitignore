@@ -51,3 +51,5 @@ coverage/
 # Temporary files
 *.tmp
 *.temp
+web/.next/
+web/node_modules/
