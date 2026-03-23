@@ -30,7 +30,8 @@
     "context-sync": "node scripts/context-sync.js",
     "report": "playwright show-report",
     "codegen": "dotenv -e .env -- sh -c 'playwright codegen --load-storage=.auth/session.json https://admin.shopify.com/store/$STORE_HANDLE/apps/$APP_HANDLE'",
-    "web": "cd web && npm install && npm run dev"
+    "web": "cd web && npm run dev",
+    "gateway-token": "node scripts/get-gateway-token.js"
   },
   "keywords": [],
   "author": "",
