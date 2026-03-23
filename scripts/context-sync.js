@@ -18,10 +18,19 @@
 const { execSync, spawnSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const { extractFromGitLabDiff } = require('./gitlab-context');
 
 const ROOT = path.join(__dirname, '..');
 const REGISTRY_FILE = path.join(ROOT, 'skills/shopify-test-gen/references/apps-registry.json');
+
+// Expand ~ thành home directory
+function expandHome(p) {
+  if (p && p.startsWith('~/')) {
+    return path.join(os.homedir(), p.slice(2));
+  }
+  return p;
+}
 const EXTRACT_SCRIPT = path.join(ROOT, 'skills/app-context-extractor/scripts/extract.py');
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -118,7 +127,7 @@ async function checkAndSync(appKey, branch, mrUrl) {
     return { upToDate: false, updated: false, contextDir: '', error: `App "${appKey}" không có trong registry.` };
   }
 
-  const repoPath = app.repoPath;
+  const repoPath = expandHome(app.repoPath);
   const srcPath = path.join(repoPath, app.srcPath);
   const localePath = path.join(repoPath, app.localePath);
   const contextDir = path.join(ROOT, app.contextDir);
