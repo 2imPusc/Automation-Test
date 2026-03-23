@@ -153,4 +153,85 @@ export class ImageManagerPage extends BasePage {
       await this.waitForHidden(this.skeleton, timeout);
     });
   }
+
+  // ── Locators (v2 additions) ───────────────────────────────────────────────
+
+  /** Modal/dialog element */
+  get dialog(): Locator {
+    return this.frame.locator('[role="dialog"]');
+  }
+
+  /** Image compare table inside the compression page */
+  get compareTable(): Locator {
+    return this.frame.locator('table').first();
+  }
+
+  // ── Actions (v2 additions) ────────────────────────────────────────────────
+
+  /**
+   * Navigate to the Image Compare / Compression sub-page.
+   */
+  async goToCompression(): Promise<void> {
+    return this.step('ImageManager: navigate to compression page', async () => {
+      await this.closeShopifySidekick();
+      await this.page.getByRole('link', { name: 'Image manager' }).click();
+      await this.frame.getByRole('link', { name: /compression/i }).click();
+      await this.waitForSkeletonGone();
+    });
+  }
+
+  /**
+   * Trigger "Optimize all" flow: click Optimize now → Optimize all.
+   */
+  async triggerOptimizeAll(): Promise<void> {
+    return this.step('ImageManager: trigger Optimize all', async () => {
+      await this.clickOptimizeNow();
+      await this.clickOptimizeAll();
+    });
+  }
+
+  /**
+   * Find the first unoptimized image row and click its optimize button.
+   */
+  async clickPerRowOptimize(): Promise<void> {
+    return this.step('ImageManager: click per-row optimize button', async () => {
+      const optimizeBtn = this.frame
+        .locator('tr')
+        .filter({ hasNot: this.frame.locator('[class*="optimized" i]') })
+        .getByRole('button', { name: /optimize/i })
+        .first();
+      await optimizeBtn.waitFor({ state: 'visible', timeout: 15000 });
+      await optimizeBtn.click();
+    });
+  }
+
+  /**
+   * Select images via checkbox in the compression image list.
+   * Clicks the first N checkboxes found in the image list.
+   */
+  async selectImages(count = 1): Promise<void> {
+    return this.step(`ImageManager: select ${count} image(s) via checkbox`, async () => {
+      const checkboxes = this.frame.locator('input[type="checkbox"]');
+      await checkboxes.first().waitFor({ state: 'visible', timeout: 10000 });
+      for (let i = 0; i < count; i++) {
+        await checkboxes.nth(i).click();
+      }
+    });
+  }
+
+  /**
+   * Navigate away from Image Manager to trigger leave prompt.
+   * Clicks the "Speed up" nav link (or first available nav link).
+   */
+  async navigateAway(): Promise<void> {
+    return this.step('ImageManager: navigate away to trigger leave prompt', async () => {
+      const navLink = this.page.getByRole('link', { name: /speed up/i });
+      if (await navLink.isVisible({ timeout: 3000 }).catch(() => false)) {
+        await navLink.click();
+      } else {
+        // Fallback: click any other nav link
+        await this.page.getByRole('link', { name: /dashboard/i }).click();
+      }
+    });
+  }
 }
