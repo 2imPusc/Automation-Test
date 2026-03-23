@@ -3,6 +3,16 @@
 Page: `/speed-up`
 Source: `pages/SpeedUp/`, `pages/SiteSpeedUp/`, `pages/ScriptManager/`, `pages/SpeedScoreDetails/`
 
+## Source Files
+- packages/assets/src/pages/SpeedUp/SpeedUp.js
+- packages/assets/src/pages/SpeedUp/CriticalCss/
+- packages/assets/src/pages/SpeedUp/FontSwap/
+- packages/assets/src/pages/SpeedUp/LazyLoad/
+- packages/assets/src/pages/SpeedUp/Minify/
+- packages/assets/src/pages/SpeedUp/Preload/
+- packages/assets/src/pages/SpeedUp/AssetImageOptimization/
+- packages/assets/src/pages/SpeedUp/Hyperspeed/
+
 ## Navigation
 
 ```typescript

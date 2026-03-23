@@ -3,6 +3,14 @@
 Pages: `/image-manager` (Compression tab) + `/image-manager/alt-text-optimizer`
 Source: `pages/ImageManager/`, `pages/ManualCompression/`
 
+## Source Files
+<!-- Layer 1 đọc nội dung → Layer 3 dùng khi cần hiểu logic -->
+- packages/assets/src/pages/ImageManager/ImageManager.js
+- packages/assets/src/pages/ImageManager/Optimizer/
+- packages/assets/src/pages/ImageManager/ImageCompression/
+- packages/assets/src/pages/ManualCompression/ManualCompression.js
+- packages/assets/src/pages/ManualCompression/CompressionTable/
+
 ## Navigation
 
 ```typescript

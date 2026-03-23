@@ -3,6 +3,11 @@
 Page: `/subscription`
 Source: `pages/Subscription/`
 
+## Source Files
+- packages/assets/src/pages/Subscription/Subscription.jsx
+- packages/assets/src/pages/Subscription/Components/
+- packages/assets/src/pages/Subscription/FreePlanCard.jsx
+
 ## Navigation
 
 ```typescript

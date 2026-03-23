@@ -3,6 +3,12 @@
 Page: `/image-manager/alt-text-optimizer`
 Source: `pages/ImageSEO/`, `pages/ImageSEOManual/`
 
+## Source Files
+- packages/assets/src/pages/ImageSEO/ImageSEO.js
+- packages/assets/src/pages/ImageSEO/ImageSEOContent/
+- packages/assets/src/pages/ImageSEO/ImageSEOHistory/
+- packages/assets/src/pages/ImageSEO/Banner/
+
 ## Navigation
 
 ```typescript

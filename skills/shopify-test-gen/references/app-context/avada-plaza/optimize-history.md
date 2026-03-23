@@ -3,6 +3,9 @@
 Page: `/optimize-history` (via Compression History in nav or link from Image Manager)
 Source: `pages/OptimizeHistory/`
 
+## Source Files
+- packages/assets/src/pages/OptimizeHistory/OptimizeHistory.js
+
 ## Navigation
 
 ```typescript
