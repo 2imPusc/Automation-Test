@@ -1,6 +1,6 @@
 import { config } from 'dotenv';
 
-config();
+config({ path: '.env' });
 
 /** Configuration for a single Shopify app under test. */
 export interface AppConfig {
@@ -20,11 +20,19 @@ export interface AppRegistry {
 }
 
 /**
+ * Resolve app handle theo ENV hiện tại.
+ * ENV=staging → đọc STAGING_* prefix
+ * Mặc định → đọc thẳng key
+ */
+function handle(key: string, fallback = ''): string {
+  const IS_STAGING = process.env.ENV === 'staging';
+  const stagingKey = `STAGING_${key}`;
+  return (IS_STAGING ? process.env[stagingKey] : process.env[key]) ?? fallback;
+}
+
+/**
  * Registry of all Shopify apps under test.
- *
- * App handles are read from environment variables. See `.env.example` for
- * the full list. For avadaPlaza, the deprecated APP_HANDLE is still accepted
- * as a fallback for backward compatibility.
+ * Handles đọc từ .env duy nhất, tự chọn staging/local theo ENV.
  *
  * @example
  *   import { APPS } from '../helpers/apps';
@@ -32,18 +40,17 @@ export interface AppRegistry {
  */
 export const APPS: AppRegistry = {
   avadaPlaza: {
-    // APP_HANDLE is deprecated — prefer AVADA_PLAZA_HANDLE in .env
-    handle: process.env.AVADA_PLAZA_HANDLE ?? process.env.APP_HANDLE ?? 'seo-pizza-app-phucdm',
+    handle: handle('AVADA_PLAZA_HANDLE') || process.env.APP_HANDLE || '',
     name: 'Avada Plaza',
     testDir: 'tests/avada-plaza',
   },
   seo: {
-    handle: process.env.SEO_HANDLE ?? '',
+    handle: handle('SEO_HANDLE'),
     name: 'SEO',
     testDir: 'tests/seo',
   },
   blogs: {
-    handle: process.env.BLOGS_HANDLE ?? '',
+    handle: handle('BLOGS_HANDLE'),
     name: 'Blogs',
     testDir: 'tests/blogs',
   },

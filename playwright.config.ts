@@ -3,19 +3,30 @@ import path from 'path';
 import { config } from 'dotenv';
 
 // ── Environment switching ──────────────────────────────────────────────────
-// Set ENV variable to switch between environments:
-//   ENV=staging npm run test   → loads .env.staging
-//   ENV=prod    npm run test   → loads .env.prod
-//   (default)                  → loads .env
+// Tất cả config nằm trong 1 file .env duy nhất.
+// ENV variable chỉ dùng để chọn prefix key + auth session file:
+//
+//   npm run test              → local   (AVADA_PLAZA_HANDLE, SEO_HANDLE, ...)
+//   ENV=staging npm run test  → staging (STAGING_AVADA_PLAZA_HANDLE, ...)
+//
 const ENV = process.env.ENV ?? 'local';
+const IS_STAGING = ENV === 'staging';
 
-if (ENV !== 'local') {
-  config({ path: `.env.${ENV}`, override: true });
-  console.log(`[env] Running against: ${ENV}`);
+// Luôn load từ .env duy nhất
+config({ path: '.env' });
+
+// Resolve handle theo env: staging dùng STAGING_* prefix, local/prod dùng thẳng
+function resolveHandle(key: string): string {
+  const stagingKey = `STAGING_${key}`;
+  return (IS_STAGING ? process.env[stagingKey] : process.env[key]) || '';
 }
 
-// Auth file is env-aware so each environment has its own session
-const AUTH_FILE = path.join('.auth', ENV === 'local' ? 'session.json' : `session.${ENV}.json`);
+if (IS_STAGING) {
+  console.log('[env] Running against: staging');
+}
+
+// Auth file riêng cho mỗi env (session login khác nhau)
+const AUTH_FILE = path.join('.auth', IS_STAGING ? 'session.staging.json' : 'session.json');
 
 export default defineConfig({
   testDir: './tests',
