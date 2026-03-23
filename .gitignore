@@ -53,3 +53,14 @@ coverage/
 *.temp
 web/.next/
 web/node_modules/
+
+# OpenClaw agent files (không thuộc repo này)
+AGENTS.md
+SOUL.md
+USER.md
+IDENTITY.md
+HEARTBEAT.md
+TOOLS.md
+BOOTSTRAP.md
+MEMORY.md
+.openclaw/
