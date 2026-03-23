@@ -32,6 +32,14 @@ const APP_IFRAME_SELECTOR = 'iframe[name="app-iframe"]';
  *   await expect(frame.getByText('Dashboard')).toBeVisible();
  */
 export async function goToApp(page: Page, appHandle: string): Promise<FrameLocator> {
+  if (!appHandle) {
+    throw new Error(
+      '[goToApp] App handle trống! Kiểm tra .env:\n' +
+      '  AVADA_PLAZA_HANDLE=ten-handle\n' +
+      '  SEO_HANDLE=ten-handle\n' +
+      'Lấy handle tại: Shopify Admin → Apps → click app → URL /apps/[HANDLE]'
+    );
+  }
   await page.goto(`${ADMIN_BASE}/apps/${appHandle}/embed`);
 
   // Chờ iframe xuất hiện trong DOM
