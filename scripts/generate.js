@@ -22,6 +22,7 @@ const path = require('path');
 const os = require('os');
 const { checkAndSync, readRegistry } = require('./context-sync');
 const { loadNotionContext } = require('./notion-context');
+const { parseProjectPath } = require('./staging-verify');
 
 const ROOT = path.join(__dirname, '..');
 const SKILL_FILE = path.join(ROOT, 'skills/shopify-test-gen/SKILL.md');
@@ -69,6 +70,7 @@ async function gatherInputs() {
       stagingHandle: ctx.stagingHandle,
       stageNum:    ctx.stageNum,
       notionUrl:   notionInput.trim(),
+      mrUrl:       ctx.mrUrl || null,
     };
   }
 
@@ -197,19 +199,24 @@ function loadAppContext(contextDir, description) {
 }
 
 // ── Build prompt ──────────────────────────────────────────────────────────────
-function buildPrompt({ appKey, appName, branch, description, contextDir, snapshotsContext, stagingHandle }) {
+function buildPrompt({ appKey, appName, branch, description, contextDir, snapshotsContext, stagingHandle, partial }) {
   const skill = fs.readFileSync(SKILL_FILE, 'utf-8');
   const ctx = loadAppContext(contextDir, description);
 
+  const partialNote = partial ? `
+> ⚠️ **Lưu ý:** Context được extract từ **MR diff** (partial), không phải full source scan.
+> Chỉ có thay đổi trong MR này. Selectors ngoài phạm vi MR có thể không chính xác — hãy dùng với caution.
+` : '';
+
   const appContextSection = ctx ? `
 ## App Context — ${appName} (branch: ${branch})
-
+${partialNote}
 ### Overview
 ${ctx.overview}
 
 ### Feature Context${ctx.matchedFile ? ` (${ctx.matchedFile})` : ''}
 ${ctx.featureContext}
-` : `## App Context\n_No context found. Using best-guess selectors._\n`;
+` : `## App Context\n${partialNote}\n_No context found. Using best-guess selectors._\n`;
 
   const snapshotSection = snapshotsContext ? `
 ## UI Snapshots (DOM from real app)
@@ -317,13 +324,18 @@ async function main() {
   }
 
   // 1. Gather inputs
-  const { appKey, branch, description, appName } = await gatherInputs();
+  const inputs = await gatherInputs();
+  const { appKey, branch, description, appName, mrUrl, stageNum, notionUrl } = inputs;
   if (!description) { console.error('❌ Mô tả trống.'); process.exit(1); }
 
-  // 2. Sync context
+  // 2. Sync context (truyền mrUrl để fallback sang GitLab diff nếu cần)
   console.log('\n🔄 Syncing context...');
-  const sync = await checkAndSync(appKey, branch);
+  const sync = await checkAndSync(appKey, branch, mrUrl || null);
   if (sync.error) { console.error(`❌ ${sync.error}`); process.exit(1); }
+
+  if (sync.partial) {
+    console.log('  ⚠️  Đang dùng partial context từ MR diff.');
+  }
 
   // 3. Load snapshots
   const snapshotsContext = loadSnapshotsContext(appKey);
@@ -335,6 +347,7 @@ async function main() {
     contextDir: sync.contextDir,
     snapshotsContext,
     stagingHandle: inputs.stagingHandle || null,
+    partial: sync.partial || false,
   });
 
   // 5. Claude generates test
@@ -350,23 +363,45 @@ async function main() {
 
   const newFiles = detectNewTestFiles(beforeFiles);
 
-  // 6. Auto-run + retry loop
+  // 6. Save last-task.json (luôn lưu sau khi gen xong, bất kể có file mới hay không)
+  let projectPath = null;
+  if (mrUrl) {
+    try { projectPath = parseProjectPath(mrUrl); } catch {}
+  }
+
+  const lastTask = {
+    notionUrl:   notionUrl || null,
+    appKey,
+    branch,
+    stageNum:    stageNum || null,
+    mrUrl:       mrUrl || null,
+    projectPath,
+    testFiles:   newFiles.length ? newFiles : [],
+    generatedAt: new Date().toISOString(),
+  };
+
+  fs.writeFileSync(path.join(ROOT, 'last-task.json'), JSON.stringify(lastTask, null, 2));
+  console.log('\n📝 Đã lưu last-task.json');
+
+  // 7. Kết quả
   if (newFiles.length > 0) {
     console.log(`\n📋 Files tạo mới: ${newFiles.join(', ')}`);
 
-    if (autoRun || await askYN('\n▶ Chạy test ngay?')) {
+    // Retry loop để fix syntax/compile errors (KHÔNG chạy thật, chỉ validate)
+    // Chạy thật → dùng npm run test:run sau khi staging sẵn sàng
+    if (!noRetry) {
       let attempt = 0;
       let passed = false;
 
-      while (attempt < (noRetry ? 1 : MAX_RETRIES) && !passed) {
+      while (attempt < MAX_RETRIES && !passed) {
         attempt++;
-        console.log(`\n🧪 Chạy test (lần ${attempt})...`);
+        console.log(`\n🧪 Validate test (lần ${attempt})...`);
         const { passed: p, output } = runTests(newFiles);
 
         if (p) {
           passed = true;
-          console.log('\n✅ Tất cả tests PASS!');
-        } else if (attempt < MAX_RETRIES && !noRetry) {
+          console.log('\n✅ Test syntax OK!');
+        } else if (attempt < MAX_RETRIES) {
           console.log(`\n⚠️  Test fail. Đang cho Claude sửa (lần ${attempt}/${MAX_RETRIES - 1})...`);
           const fixPrompt = `${prompt}
 
@@ -386,24 +421,15 @@ Do NOT create new files — only fix the existing ones listed above.
 `;
           runClaude(fixPrompt);
         } else {
-          console.log('\n❌ Tests vẫn fail sau retry.');
-          console.log('👉 Chạy để debug: npm run test:headed');
-          console.log(`👉 Xem screenshot: playwright-report/`);
+          console.log('\n⚠️  Test chưa pass sau retry — có thể cần staging để chạy thật.');
         }
       }
     }
   } else {
-    // Claude không tạo file mới — hỏi chạy hết
-    if (!autoRun) {
-      const runAll = await askYN('\n▶ Chạy tất cả tests?');
-      if (runAll) {
-        spawnSync('npx', ['playwright', 'test', '--project=chromium'], {
-          cwd: ROOT, stdio: 'inherit', shell: true,
-        });
-      }
-    }
+    console.log('\n⚠️  Claude không tạo file mới.');
   }
 
+  console.log('\n✅ Test đã tạo. Khi staging sẵn sàng: npm run test:run');
   console.log('');
 }
 

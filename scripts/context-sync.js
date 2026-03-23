@@ -18,6 +18,7 @@
 const { execSync, spawnSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const { extractFromGitLabDiff } = require('./gitlab-context');
 
 const ROOT = path.join(__dirname, '..');
 const REGISTRY_FILE = path.join(ROOT, 'skills/shopify-test-gen/references/apps-registry.json');
@@ -104,11 +105,12 @@ function runExtract(appKey, appName, srcPath, localePath, contextDir) {
 /**
  * Check context và sync nếu cần.
  *
- * @param {string} appKey - key trong registry (e.g. 'avadaPlaza')
- * @param {string} branch - branch tester muốn test (e.g. 'feature/new-ui')
- * @returns {{ upToDate: boolean, updated: boolean, contextDir: string, error?: string }}
+ * @param {string} appKey  - key trong registry (e.g. 'avadaPlaza')
+ * @param {string} branch  - branch tester muốn test (e.g. 'feature/new-ui')
+ * @param {string} [mrUrl] - GitLab MR URL (dùng khi fallback sang diff mode)
+ * @returns {{ upToDate: boolean, updated: boolean, contextDir: string, partial?: boolean, error?: string }}
  */
-async function checkAndSync(appKey, branch) {
+async function checkAndSync(appKey, branch, mrUrl) {
   const registry = readRegistry();
   const app = registry[appKey];
 
@@ -122,9 +124,27 @@ async function checkAndSync(appKey, branch) {
   const contextDir = path.join(ROOT, app.contextDir);
   const overviewPath = path.join(contextDir, '_overview.md');
 
-  // 1. Kiểm tra repo tồn tại
+  // 1. Kiểm tra repo tồn tại — nếu không có, fallback sang GitLab MR diff
   if (!fs.existsSync(repoPath)) {
-    return { upToDate: false, updated: false, contextDir, error: `Repo không tồn tại: ${repoPath}\nChạy: npm run setup-apps` };
+    console.warn(`\n⚠️  Repo không có local (${repoPath}).`);
+    console.warn(`   Dùng GitLab MR diff (partial context).`);
+
+    if (!mrUrl) {
+      return {
+        upToDate: false, updated: false, contextDir,
+        error: `Repo không tồn tại: ${repoPath}\nKhông có MR URL để fallback. Truyền MR URL hoặc chạy: npm run setup-apps`,
+      };
+    }
+
+    try {
+      await extractFromGitLabDiff(appKey, mrUrl, contextDir);
+      return { upToDate: false, updated: true, contextDir, partial: true };
+    } catch (err) {
+      return {
+        upToDate: false, updated: false, contextDir,
+        error: `Repo không có local và không thể lấy GitLab diff: ${err.message}`,
+      };
+    }
   }
 
   // 2. Checkout branch (nếu cần)
