@@ -178,15 +178,37 @@ npm run test:pick
 
 ## Cấu trúc agent (OpenClaw)
 
-Khi dùng Web UI để gen test, hệ thống hoạt động như sau:
+Khi dùng Web UI để gen test, hệ thống dùng 2 agent trong OpenClaw:
 
 ```
-Web UI
-  └→ OpenClaw (local, dùng Claude Max của bạn)
-        ├─ Đọc Notion task (bug list, comments, MR link)
-        ├─ Đọc GitLab MR (branch, diff, staging deploy)
-        ├─ Đọc source code app local (data-testid, routes, locale)
-        └─ Sinh test case + Page Object → lưu vào tests/ và helpers/pages/
+Web UI (localhost:3100)
+  └→ OpenClaw Gateway (localhost:18789)
+        ├─ Agent main   → Booni (hội thoại, điều phối)
+        └─ Agent test-gen → Shopify Test Generator
+                ├─ Workspace: /path/to/shopify-autotest
+                ├─ Đọc skills/shopify-test-gen/SKILL.md (rules)
+                ├─ Đọc .context/[app].md (source code đã extract)
+                ├─ Đọc snapshots/ (DOM thật)
+                └─ Sinh test case + Page Object files
+```
+
+**Agent `test-gen`** cần được thêm vào OpenClaw config:
+
+```json
+{
+  "id": "test-gen",
+  "name": "Shopify Test Generator",
+  "workspace": "/path/to/shopify-autotest",
+  "agentDir": "~/.openclaw/agents/test-gen/agent",
+  "model": "anthropic/claude-sonnet-4-6"
+}
+```
+
+Tạo AGENTS.md cho agent tại `~/.openclaw/agents/test-gen/agent/AGENTS.md` — copy từ file mẫu trong repo:
+```bash
+mkdir -p ~/.openclaw/agents/test-gen/agent
+cp docs/test-gen-AGENTS.md ~/.openclaw/agents/test-gen/agent/AGENTS.md
+# Sửa workspace path trong file cho đúng máy của bạn
 ```
 
 **Lý do cần OpenClaw:** Claude Max subscription không có API key trực tiếp.
