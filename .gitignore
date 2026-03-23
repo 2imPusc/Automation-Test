@@ -53,6 +53,7 @@ coverage/
 *.temp
 web/.next/
 web/node_modules/
+web/.env.local
 
 # OpenClaw agent files (không thuộc repo này)
 AGENTS.md

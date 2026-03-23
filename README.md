@@ -10,10 +10,29 @@ Dự án automation testing cho các ứng dụng Shopify sử dụng [Playwrigh
 - ✅ **Smoke tests** — chạy nhanh < 60s trước mỗi deploy
 - ✅ **Multi-environment** — local / staging / production
 - ✅ **Interactive CLI** — setup wizard + test picker, không cần nhớ commands
+- ✅ **AI Test Generator** — sinh Playwright test từ Notion task link (dùng Claude Max)
+- ✅ **Web UI** — giao diện tại `localhost:3100` để gen test, verify staging, run test
 
 ---
 
-## Cài đặt lần đầu
+## Cài đặt nhanh (dùng OpenClaw)
+
+Nếu đã có OpenClaw, chỉ cần install skill và nhắn AI:
+
+```bash
+openclaw skill install docs/shopify-autotest-setup.skill
+```
+
+Sau đó nhắn agent:
+> "Setup shopify-autotest cho tôi: https://github.com/2imPusc/Automation-Test"
+
+Agent sẽ tự detect OS, clone repo, cài đặt dependencies, cấu hình `.env`, tạo agent `test-gen`, và verify installation.
+
+Xem hướng dẫn đầy đủ tại: **[SETUP.md](SETUP.md)**
+
+---
+
+## Cài đặt lần đầu (thủ công)
 
 ### 1. Clone & cài dependencies
 
