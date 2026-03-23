@@ -21,6 +21,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { checkAndSync, readRegistry } = require('./context-sync');
+const { loadNotionContext } = require('./notion-context');
 
 const ROOT = path.join(__dirname, '..');
 const SKILL_FILE = path.join(ROOT, 'skills/shopify-test-gen/SKILL.md');
@@ -45,6 +46,33 @@ async function gatherInputs() {
 
   console.log('\n🤖 AI Test Generator');
   console.log('─────────────────────────────────────────────────');
+  console.log('Nhập Notion task link để tự động lấy context,');
+  console.log('hoặc nhấn Enter để nhập thủ công.\n');
+
+  const notionInput = await ask(rl, 'Notion task URL (hoặc Enter để bỏ qua): ');
+
+  if (notionInput.trim().includes('notion.so')) {
+    rl.close();
+    const ctx = await loadNotionContext(notionInput.trim());
+
+    // Nếu chưa có staging handle → warn nhưng vẫn tiếp tục
+    if (ctx.stageNum && !ctx.stagingHandle) {
+      console.warn(`\n⚠️  STAGING_${ctx.stageNum}_*_HANDLE chưa set trong .env`);
+      console.warn(`   Thêm handle staging ${ctx.stageNum} vào .env để test đúng môi trường.\n`);
+    }
+
+    return {
+      appKey:      ctx.appKey,
+      appName:     ctx.appName,
+      branch:      ctx.branch || 'master',
+      description: ctx.description,
+      stagingHandle: ctx.stagingHandle,
+      stageNum:    ctx.stageNum,
+      notionUrl:   notionInput.trim(),
+    };
+  }
+
+  // ── Nhập thủ công ────────────────────────────────────────────────────────
 
   // 1. Chọn app
   console.log('\nApps có sẵn:');
@@ -169,7 +197,7 @@ function loadAppContext(contextDir, description) {
 }
 
 // ── Build prompt ──────────────────────────────────────────────────────────────
-function buildPrompt({ appKey, appName, branch, description, contextDir, snapshotsContext }) {
+function buildPrompt({ appKey, appName, branch, description, contextDir, snapshotsContext, stagingHandle }) {
   const skill = fs.readFileSync(SKILL_FILE, 'utf-8');
   const ctx = loadAppContext(contextDir, description);
 
@@ -188,12 +216,19 @@ ${ctx.featureContext}
 ${snapshotsContext}
 ` : '';
 
+  const stagingSection = stagingHandle ? `
+## Staging Environment
+- **Staging handle:** \`${stagingHandle}\`
+- Dùng handle này thay vì handle production khi test trên staging.
+` : '';
+
   return `${skill}
 
 ---
 
 ${appContextSection}
 ${snapshotSection}
+${stagingSection}
 
 ## Request
 
@@ -299,6 +334,7 @@ async function main() {
     appKey, appName, branch, description,
     contextDir: sync.contextDir,
     snapshotsContext,
+    stagingHandle: inputs.stagingHandle || null,
   });
 
   // 5. Claude generates test
