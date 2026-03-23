@@ -1,142 +1,119 @@
 # Shopify Automation Tests
 
-Dự án automation testing cho các ứng dụng Shopify sử dụng [Playwright](https://playwright.dev).
+Dự án automation testing cho các Shopify app sử dụng [Playwright](https://playwright.dev), tích hợp AI để sinh test case tự động từ Notion task.
+
+---
 
 ## Tính năng
 
-- ✅ **Page Object Model** — selectors tập trung, dễ maintain khi UI thay đổi
-- ✅ **Multi-app support** — test nhiều app (Avada Plaza, SEO, Blogs) từ cùng 1 dự án
-- ✅ **Custom Fixtures** — setup tự động, viết test gọn hơn
-- ✅ **Smoke tests** — chạy nhanh < 60s trước mỗi deploy
-- ✅ **Multi-environment** — local / staging / production
-- ✅ **Interactive CLI** — setup wizard + test picker, không cần nhớ commands
-- ✅ **AI Test Generator** — sinh Playwright test từ Notion task link (dùng Claude Max)
-- ✅ **Web UI** — giao diện tại `localhost:3100` để gen test, verify staging, run test
+| | Tính năng |
+|---|---|
+| ✅ | **Page Object Model** — selectors tập trung, dễ maintain |
+| ✅ | **Multi-app** — Avada Plaza, SEO, Blogs từ cùng 1 dự án |
+| ✅ | **Multi-environment** — local / staging / production |
+| ✅ | **Smoke tests** — chạy nhanh < 60s trước mỗi deploy |
+| ✅ | **AI Test Generator** — sinh test từ Notion task, dùng Claude Max |
+| ✅ | **Staging verify** — kiểm tra branch deploy trước khi chạy test |
+| ✅ | **Web UI** — giao diện tại `localhost:3100` |
 
 ---
 
-## Cài đặt nhanh (dùng OpenClaw)
+## Kiến trúc
 
-Nếu đã có OpenClaw, chỉ cần install skill và nhắn AI:
+```
+Web UI (localhost:3100)
+    └→ OpenClaw Gateway (localhost:18789, dùng Claude Max)
+            └→ Agent test-gen
+                    ├─ Đọc SKILL.md + .context/ + snapshots/
+                    └─ Sinh test files vào tests/ + helpers/pages/
+
+Playwright runner
+    └→ Shopify Admin (session đã auth)
+            └→ App iframe (frame.* thay vì page.*)
+```
+
+---
+
+## Cài đặt
+
+### Cách nhanh — dùng OpenClaw (khuyến nghị)
 
 ```bash
+# 1. Cài OpenClaw và start
+npm install -g openclaw && openclaw start
+
+# 2. Từ thư mục repo, cài skill setup
 openclaw skill install docs/shopify-autotest-setup.skill
 ```
 
-Sau đó nhắn agent:
+Nhắn agent:
 > "Setup shopify-autotest cho tôi: https://github.com/2imPusc/Automation-Test"
 
-Agent sẽ tự detect OS, clone repo, cài đặt dependencies, cấu hình `.env`, tạo agent `test-gen`, và verify installation.
-
-Xem hướng dẫn đầy đủ tại: **[SETUP.md](SETUP.md)**
+Agent tự detect OS, clone repo, cài dependencies, cấu hình `.env`, tạo agent `test-gen`, và verify. Xem chi tiết: **[SETUP.md](SETUP.md)**
 
 ---
 
-## Cài đặt lần đầu (thủ công)
+### Cài thủ công
 
-### 1. Clone & cài dependencies
+#### 1. Clone & cài dependencies
 
 ```bash
-git clone https://github.com/2imPusc/Automation-Test.git
+git clone https://github.com/2imPusc/Automation-Test.git shopify-autotest
 cd shopify-autotest
 npm install
+npx playwright install chromium
 ```
 
-### 2. Setup môi trường (cách nhanh)
+#### 2. Clone source code app (cần cho AI đọc context)
 
 ```bash
-npm run setup
+git clone https://gitlab.com/avada/avada-image-optimizer ~/avada-image-optimizer
+git clone https://gitlab.com/avada/seo ~/seo
+git clone https://gitlab.com/avada/blogs ~/blogs
 ```
 
-Wizard sẽ hỏi từng bước và tự ghi file `.env`. Không cần tự tạo thủ công.
+#### 3. Cấu hình `.env`
 
-> **Cách thủ công:** Copy `.env.example` → `.env` rồi điền thông tin vào.
+```bash
+cp .env.example .env
+# Điền: STORE_HANDLE, app handles, staging handles, GITLAB_TOKEN, AVADA_NOTION_TOKEN
+```
 
-### 3. Login Shopify
+#### 4. Đăng nhập Shopify
 
 ```bash
 npm run auth
 ```
 
-Browser sẽ mở để bạn đăng nhập. Session được lưu tự động vào `.auth/session.json`.
-
-### 4. Chạy thử
+#### 5. Setup Web UI
 
 ```bash
-npm run test:smoke
+cd web && npm install
+node ../scripts/get-gateway-token.js  # lấy OPENCLAW_GATEWAY_TOKEN
+# Tạo web/.env.local với token vừa lấy
+npm run dev  # http://localhost:3100
 ```
 
 ---
 
-## Tìm App Handle
+## Workflow hàng ngày
 
-1. Vào Shopify Admin → Apps
-2. Click vào app cần test
-3. Nhìn URL: `.../apps/[APP_HANDLE]/...`
-4. Copy phần `APP_HANDLE` vào `.env`
+### Web UI (khuyến nghị cho tester)
 
----
+1. Mở **http://localhost:3100/smart-run**
+2. Paste Notion task link → **Parse**
+3. **Generate Test Cases** (AI đọc source code + bug list)
+4. Chọn Staging → **Kiểm tra** branch deploy
+5. **▶ Run Tests**
 
-## Chạy Tests
-
-### Cách dễ nhất — Test Picker
-
-```bash
-npm run test:pick
-```
-
-```
-🎭 Which tests do you want to run?
-────────────────────────────────────
-  1. All tests
-  2. Avada Plaza only
-  3. SEO only
-  4. Blogs only
-  5. Smoke tests only (fast ⚡)
-  6. Open UI mode (debug 🔍)
-```
-
-### Chạy trực tiếp
-
-| Command | Mô tả |
-|---|---|
-| `npm run test` | Tất cả tests |
-| `npm run test:avada-plaza` | Chỉ Avada Plaza |
-| `npm run test:seo` | Chỉ SEO |
-| `npm run test:blogs` | Chỉ Blogs |
-| `npm run test:smoke` | Smoke tests (< 60s) |
-| `npm run test:ui` | UI mode để debug |
-| `npm run test:headed` | Headed browser (thấy browser chạy) |
-| `npm run report` | Xem HTML report |
-
----
-
-## Multi-Environment
-
-Hỗ trợ chạy test trên nhiều store khác nhau.
-
-### Cấu hình
-
-Tạo file `.env.staging` và `.env.prod` (dựa theo `.env.example`):
-
-```env
-# .env.staging
-STORE_HANDLE=your-staging-store
-AVADA_PLAZA_HANDLE=your-avada-plaza-handle
-```
-
-### Login từng env
+### Terminal
 
 ```bash
-npm run auth:staging   # login staging
-npm run auth:prod      # login production
-```
-
-### Chạy test theo env
-
-```bash
-npm run test:staging   # test trên staging store
-npm run test:prod      # test trên production store
+npm run test:generate   # gen test từ Notion task
+npm run test:run        # verify staging + run
+npm run test:smoke      # smoke test nhanh (< 60s)
+npm run test:pick       # menu chọn test suite
+npm run report          # xem HTML report
 ```
 
 ---
@@ -145,113 +122,81 @@ npm run test:prod      # test trên production store
 
 ```
 shopify-autotest/
-├── .env                      # Cấu hình local (không commit)
-├── .env.staging              # Cấu hình staging (không commit)
-├── .env.prod                 # Cấu hình production (không commit)
-├── .env.example              # Template cấu hình
-├── .auth/
-│   ├── session.json          # Session local (không commit)
-│   ├── session.staging.json  # Session staging (không commit)
-│   └── session.prod.json     # Session production (không commit)
-├── fixtures/
-│   └── index.ts              # Custom Playwright fixtures
+├── .env                    # Config local (không commit)
+├── .env.example            # Template
+├── fixtures/index.ts       # Custom Playwright fixtures
 ├── helpers/
-│   ├── apps.ts               # Registry các app (handles, names)
-│   ├── shopify.ts            # Utility functions (goToApp, waitForAppLoad)
+│   ├── apps.ts             # Registry app (đọc từ .env)
+│   ├── shopify.ts          # goToApp(), waitForAppLoad()
 │   └── pages/
-│       ├── BasePage.ts       # Base class cho Page Objects
-│       └── ImageManagerPage.ts  # Page Object của Image Manager
+│       ├── BasePage.ts     # Base class POM
+│       └── ImageManagerPage.ts
 ├── scripts/
-│   ├── setup.js              # Setup wizard (npm run setup)
-│   └── pick.js               # Interactive test picker (npm run test:pick)
+│   ├── generate.js         # AI test generator (CLI)
+│   ├── run.js              # Verify staging + run
+│   ├── notion-context.js   # Đọc Notion task
+│   ├── gitlab-context.js   # MR diff fallback
+│   ├── staging-verify.js   # Kiểm tra staging deploy
+│   ├── snapshot.js         # Chụp UI thật
+│   ├── context-sync.js     # Sync source code context
+│   └── get-gateway-token.js
+├── skills/
+│   └── shopify-test-gen/SKILL.md   # Rules cho AI
 ├── tests/
-│   ├── auth.setup.ts         # Setup authentication
-│   ├── example.spec.ts       # Ví dụ test
-│   ├── avada-plaza/
-│   │   ├── README.md
-│   │   ├── basic.spec.ts     # Smoke: app load, không crash
-│   │   └── compress.spec.ts  # Image Manager: auto + manual compress
-│   ├── seo/                  # Tests cho SEO app (chưa có)
-│   └── blogs/                # Tests cho Blogs app (chưa có)
-├── playwright.config.ts      # Cấu hình Playwright
-└── package.json
+│   ├── auth.setup.ts
+│   └── avada-plaza/
+│       ├── basic.spec.ts   # Smoke tests
+│       └── compress.spec.ts
+├── web/                    # Next.js Web UI (localhost:3100)
+├── docs/
+│   ├── SETUP.md → xem SETUP.md
+│   ├── FLOW.md → xem FLOW.md
+│   └── shopify-autotest-setup.skill
+└── playwright.config.ts
 ```
 
 ---
 
-## Viết Test Mới
-
-### Dùng fixture có sẵn
+## Viết test mới
 
 ```typescript
-// Import từ fixtures thay vì @playwright/test
+// Import từ fixtures (không phải @playwright/test)
 import { test, expect } from '../../fixtures';
 
 test('tên test @smoke', async ({ imageManager }) => {
-  // imageManager đã được setup sẵn, dùng luôn
   await expect(imageManager.frame.getByText('Total images')).toBeVisible();
   await imageManager.clickOptimizeNow();
 });
 ```
 
-### Dùng Page Object trực tiếp
-
-```typescript
-import { test, expect } from '@playwright/test';
-import { goToApp } from '../../helpers/shopify';
-import { APPS } from '../../helpers/apps';
-import { ImageManagerPage } from '../../helpers/pages/ImageManagerPage';
-
-test('tên test', async ({ page }) => {
-  const frame = await goToApp(page, APPS.avadaPlaza.handle);
-  const imageManager = new ImageManagerPage(page, frame);
-  await imageManager.goTo();
-  // test logic...
-});
-```
-
-### Tag smoke test
-
-Thêm `@smoke` vào tên test để include vào `npm run test:smoke`:
-
-```typescript
-test('app load đúng @smoke', async ({ page }) => { ... });
-```
+**Quy tắc bắt buộc:**
+- Dùng `frame.*` không phải `page.*` — Shopify app chạy trong iframe
+- Không hardcode handle — dùng `APPS.avadaPlaza.handle`
+- Tag `@smoke` cho test quan trọng
 
 ---
 
 ## Troubleshooting
 
-### Tests fail do authentication
-
-```bash
-npm run auth:reset
-npm run auth
-```
-
-### Tests fail do selectors cũ
-
-1. Chạy `npm run test:headed` để xem browser thực tế
-2. Cập nhật selectors trong `helpers/pages/ImageManagerPage.ts` (chỉ 1 file)
-
-### Không tìm thấy app
-
-Kiểm tra `AVADA_PLAZA_HANDLE` (hoặc handle tương ứng) trong `.env`.
-
-### Session hết hạn
-
-```bash
-npm run auth:reset && npm run auth
-```
+| Lỗi | Fix |
+|-----|-----|
+| Authentication failed | `npm run auth:reset && npm run auth` |
+| App not found | Kiểm tra handle trong `.env` |
+| Session expired | `npm run auth:reset && npm run auth` |
+| Selectors cũ | `npm run test:headed` → xem browser thực tế |
+| test-gen agent 404 | `openclaw gateway restart` |
+| NOTION_TOKEN error | Thêm vào `web/.env.local` |
 
 ---
 
-## Contributing
+## Tài liệu
 
-1. Fork repository
-2. Tạo branch: `git checkout -b feature/ten-tinh-nang`
-3. Commit: `git commit -m 'feat: mô tả thay đổi'`
-4. Push & tạo Pull Request
+- **[SETUP.md](SETUP.md)** — Hướng dẫn cài đặt đầy đủ (macOS + Windows)
+- **[FLOW.md](FLOW.md)** — Kiến trúc và luồng hoạt động tổng thể
+- **[GUIDE.md](GUIDE.md)** — Hướng dẫn sử dụng cho tester
+- **[CHANGELOG.md](CHANGELOG.md)** — Lịch sử thay đổi
+
+---
 
 ## License
 
