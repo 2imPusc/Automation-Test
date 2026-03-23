@@ -25,8 +25,13 @@ if (IS_STAGING) {
   console.log('[env] Running against: staging');
 }
 
-// Auth file riêng cho mỗi env (session login khác nhau)
-const AUTH_FILE = path.join('.auth', IS_STAGING ? 'session.staging.json' : 'session.json');
+// Auth file: dùng session riêng cho env nếu có, fallback về session.json chung
+// → 1 tài khoản Shopify có thể truy cập cả local/staging/prod qua cùng session
+import fs from 'fs';
+
+const sessionEnvFile = path.join('.auth', IS_STAGING ? 'session.staging.json' : `session.${ENV}.json`);
+const sessionFallback = path.join('.auth', 'session.json');
+const AUTH_FILE = (ENV !== 'local' && fs.existsSync(sessionEnvFile)) ? sessionEnvFile : sessionFallback;
 
 export default defineConfig({
   testDir: './tests',
