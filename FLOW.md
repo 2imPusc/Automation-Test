@@ -1,393 +1,377 @@
-# FLOW.md — Luồng Hoạt Động Hệ Thống
+# FLOW.md — Luồng Hoạt Động Tổng Thể
 
-Tài liệu này mô tả **toàn bộ luồng hoạt động** của dự án `shopify-autotest`, từ kiến trúc tổng thể đến từng thành phần, kèm cách kiểm chứng kết quả ở mỗi bước.
-
----
-
-## Tổng quan kiến trúc
-
-```
-Tester (mô tả) → AI Generator → Playwright Test → Báo cáo kết quả
-                      ↑
-              Snapshot (DOM thật) + App Context (source code)
-```
-
-Dự án có 3 tầng chính:
-
-| Tầng | Vai trò | Thành phần |
-|------|---------|------------|
-| **Infrastructure** | Auth, config, helper | `.env`, `.auth/`, `helpers/`, `fixtures/` |
-| **AI Generator** | Sinh test tự động | `scripts/generate.js`, `scripts/snapshot.js`, `skills/` |
-| **Test Runner** | Chạy test, báo cáo | `tests/`, `playwright.config.ts`, HTML report |
+Tài liệu này mô tả **hệ thống shopify-autotest hoạt động như thế nào** — từ cấu hình ban đầu đến khi chạy test và đọc kết quả. Dùng để hiểu tổng thể và kiểm chứng từng phần.
 
 ---
 
-## Phase 1 — Page Object Model (POM)
-
-### Mục đích
-Tách selector (UI locator) ra khỏi logic test → khi UI thay đổi, chỉ sửa 1 file POM thay vì sửa tất cả tests.
-
-### Luồng
+## Bức tranh toàn cảnh
 
 ```
-Test file (spec.ts)
-    └→ Page Object (helpers/pages/XxxPage.ts)
-           └→ BasePage.ts (waitForVisible, clickButton, ...)
-                  └→ Playwright (browser automation)
-```
-
-### Thành phần
-
-- **`helpers/pages/BasePage.ts`** — base class, chứa các action phổ biến:
-  - `waitForVisible(locator, ms)` — chờ element hiện ra
-  - `waitForHidden(locator, ms)` — chờ element ẩn đi
-  - `clickButton(locator)` — click + chờ response
-  - Throw lỗi rõ ràng kèm tên class khi timeout
-
-- **`helpers/pages/ImageManagerPage.ts`** — Page Object của Image Manager:
-  - Chứa toàn bộ locators: `toast`, `progress`, `skeleton`, `compressButton`...
-  - Chứa actions: `goTo()`, `waitForLoad()`, `clickOptimizeNow()`, `switchToManualMode()`...
-
-- **`helpers/apps.ts`** — registry các app:
-  - Đọc handles từ env (`AVADA_PLAZA_HANDLE`, `SEO_HANDLE`, `BLOGS_HANDLE`)
-  - Backward compat: `APP_HANDLE` vẫn là fallback
-
-### Kiểm chứng Phase 1
-
-```bash
-npm run test:avada-plaza
-```
-
-✅ **Pass:** Terminal hiển thị `✓` cho `basic.spec.ts` và `compress.spec.ts`
-❌ **Fail:** Chạy `npm run test:headed` → xem browser để biết UI thay đổi gì
-
----
-
-## Phase 2 — Fixtures & Smoke Tests
-
-### Mục đích
-- **Fixtures:** tự động setup/teardown Page Objects, viết test gọn hơn
-- **Smoke tests:** bộ test nhanh (< 60 giây) để verify hệ thống trước deploy
-
-### Luồng
-
-```
-test('...', async ({ imageManager }) => { ... })
-         ↑
-fixtures/index.ts (tự khởi tạo ImageManagerPage, inject vào test)
-```
-
-### Thành phần
-
-- **`fixtures/index.ts`** — re-export `test` từ Playwright, thêm fixture:
-  - `imageManager`: khởi tạo `ImageManagerPage`, gọi `goTo()`, inject vào test
-  - Test dùng `import { test } from '../../fixtures'` thay vì `@playwright/test`
-
-- **Smoke tags:** thêm `@smoke` vào tên test → được pick bởi `grep: '@smoke'` trong config
-
-### Kiểm chứng Phase 2
-
-```bash
-npm run test:smoke
-```
-
-✅ **Pass:** Chạy xong trong < 60 giây, toàn bộ `@smoke` test pass
-```
-✓ app load được @smoke (3.2s)
-✓ Image Manager hiển thị đúng @smoke (5.1s)
-2 passed (8.3s)
+┌──────────────────────────────────────────────────────────────────┐
+│                        SHOPIFY AUTOTEST                          │
+│                                                                  │
+│   .env (store + app handles)                                     │
+│   .auth/session.json (session đã login)                          │
+│            │                                                     │
+│            ▼                                                     │
+│   ┌─────────────────┐     ┌──────────────────────────────────┐  │
+│   │  Test thủ công  │     │       AI Test Generator          │  │
+│   │                 │     │                                  │  │
+│   │  tests/*.spec   │     │  snapshot (DOM thật)             │  │
+│   │  helpers/pages/ │     │  + source context                │  │
+│   │  fixtures/      │     │  → Claude Code sinh spec + POM   │  │
+│   └────────┬────────┘     └──────────────┬───────────────────┘  │
+│            │                             │                       │
+│            └──────────────┬──────────────┘                       │
+│                           ▼                                      │
+│                    Playwright chạy test                          │
+│                    trên Shopify Admin (iframe)                   │
+│                           │                                      │
+│                           ▼                                      │
+│                    HTML Report (pass/fail + screenshot)          │
+└──────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Phase 3 — Authentication & Session
+## 1. Cấu hình & Xác thực
 
-### Mục đích
-Lưu session Shopify đã đăng nhập để các test không cần login lại mỗi lần.
+### 1.1 File cấu hình `.env`
 
-### Luồng
+Mọi thứ bắt đầu từ file `.env` — chứa thông tin store và app handles:
+
+```env
+STORE_HANDLE=dophuc-store
+AVADA_PLAZA_HANDLE=avada-image-optimizer
+SEO_HANDLE=seo-pizza-app-phucdm
+BLOGS_HANDLE=
+```
+
+`playwright.config.ts` đọc file này trước khi chạy bất kỳ test nào.
+Multi-environment: `ENV=staging` → load `.env.staging`; `ENV=prod` → load `.env.prod`.
+
+### 1.2 Session đăng nhập
+
+Shopify yêu cầu đăng nhập để vào Admin. Thay vì đăng nhập lại mỗi lần chạy test:
 
 ```
 npm run auth
-    └→ Playwright mở browser → User đăng nhập Shopify thủ công
+    └→ Playwright mở browser → User đăng nhập Shopify
            └→ Session lưu vào .auth/session.json
-                  └→ playwright.config.ts đọc session trước khi chạy test
-                         └→ Tests chạy trong trạng thái đã đăng nhập
+                  └→ Mọi test đọc session này → chạy ở trạng thái đã login
 ```
 
-### Thành phần
+Session thường dùng được nhiều tuần. Hết hạn → `npm run auth:reset && npm run auth`.
 
-- **`tests/auth.setup.ts`** — setup project "chromium setup":
-  - Mở browser (headed) để user đăng nhập
-  - Lưu storage state vào `.auth/session.json` (hoặc `.auth/session.staging.json`)
-  
-- **`playwright.config.ts`** — đọc `ENV` variable:
-  - `ENV=staging` → load `.env.staging` và dùng `session.staging.json`
-  - Mặc định → load `.env` và dùng `session.json`
-
-### Kiểm chứng Phase 3
-
+**Kiểm chứng:**
 ```bash
-cat .auth/session.json | head -5
+cat .auth/session.json | grep "shopify" | head -3
+# ✅ Có cookies của Shopify → session hợp lệ
+# ❌ File rỗng hoặc không có → cần auth lại
 ```
-
-✅ **Pass:** File tồn tại, có chứa `cookies` của Shopify
-❌ **Fail:** File không có hoặc rỗng → chạy lại `npm run auth`
 
 ---
 
-## Phase 4 — Multi-Environment & Interactive CLI
+## 2. Cấu trúc Test
 
-### Mục đích
-- Chạy test trên nhiều store (local dev / staging / production) mà không sửa code
-- CLI wizard + menu để tester không cần nhớ commands
+### 2.1 Page Object Model (POM)
 
-### Luồng: Multi-environment
+Shopify apps chạy trong **iframe** — đây là điểm quan trọng nhất. Mọi selector phải dùng `frame.*` thay vì `page.*`.
 
 ```
-ENV=staging npm run test
-    └→ playwright.config.ts detect ENV=staging
-           └→ load .env.staging (store handle, app handles)
-                  └→ dùng .auth/session.staging.json
-                         └→ chạy test trên staging store
+Test spec (tests/avada-plaza/compress.spec.ts)
+    └→ Gọi ImageManagerPage (helpers/pages/ImageManagerPage.ts)
+           └→ Extends BasePage (helpers/pages/BasePage.ts)
+                  └→ Dùng frame.locator() — không phải page.locator()
 ```
 
-### Luồng: Interactive CLI
+**Lý do dùng POM:** Khi Shopify thay đổi UI → chỉ sửa 1 file Page Object, không cần đụng vào test spec.
 
+**`BasePage.ts`** — các action phổ biến dùng cho mọi page:
+- `waitForVisible(locator, ms)` — chờ element xuất hiện
+- `waitForHidden(locator, ms)` — chờ element biến mất
+- `clickButton(locator)` — click và chờ
+- Throw lỗi mô tả rõ: `[ImageManagerPage] waitForVisible timed out after 5000ms`
+
+**`ImageManagerPage.ts`** — Page Object của Image Manager app:
+- Locators: `toast`, `progress`, `skeleton`, `compressButton`, `optimizeAllButton`
+- Actions: `goTo()`, `waitForLoad()`, `clickOptimizeNow()`, `switchToManualMode()`, `selectFirstImage()`, `clickCompressImage()`
+
+### 2.2 Fixtures
+
+Fixtures tự động khởi tạo Page Object và inject vào test — không cần boilerplate:
+
+```typescript
+// Không dùng fixture:
+const frame = await goToApp(page, APPS.avadaPlaza.handle);
+const imageManager = new ImageManagerPage(page, frame);
+await imageManager.goTo();
+
+// Dùng fixture — gọn hơn, tự setup:
+import { test } from '../../fixtures';
+test('...', async ({ imageManager }) => {
+  // imageManager đã sẵn sàng
+});
 ```
+
+### 2.3 App Registry
+
+`helpers/apps.ts` chứa thông tin tất cả apps — đọc handle từ `.env`:
+
+```typescript
+APPS.avadaPlaza  →  handle: process.env.AVADA_PLAZA_HANDLE
+APPS.seo         →  handle: process.env.SEO_HANDLE
+APPS.blogs       →  handle: process.env.BLOGS_HANDLE
+```
+
+---
+
+## 3. Chạy Tests
+
+### 3.1 Cách chạy
+
+**Menu tương tác** (khuyên dùng — không cần nhớ lệnh):
+```bash
 npm run test:pick
-    └→ scripts/pick.js hiện menu số
-           └→ Tester chọn số (1-8)
-                  └→ pick.js spawn đúng npm script tương ứng
+```
+```
+1. All tests
+2. Avada Plaza only
+3. SEO only
+4. Blogs only
+5. Smoke tests only (fast ⚡)
+6. Open UI mode (debug 🔍)
+7. 🤖 Generate new test with AI
+8. 📸 Capture app snapshots
 ```
 
-### Kiểm chứng Phase 4
+**Lệnh trực tiếp:**
 
-```bash
-# Multi-env
-npm run test:staging        # phải chạy test trên staging store URL
+| Lệnh | Khi nào dùng |
+|------|-------------|
+| `npm run test:smoke` | Trước deploy — chạy nhanh < 60s |
+| `npm run test` | Kiểm tra toàn bộ |
+| `npm run test:avada-plaza` | Chỉ test Avada Plaza |
+| `npm run test:headed` | Muốn thấy browser chạy thực tế |
+| `npm run test:ui` | Debug chi tiết từng test |
+| `npm run report` | Xem báo cáo HTML sau khi chạy |
 
-# Interactive picker
-npm run test:pick           # phải hiện menu, chọn 5 → chạy smoke tests
+### 3.2 Luồng chạy một test
+
 ```
+npm run test:smoke
+    │
+    ├─ playwright.config.ts load .env + .auth/session.json
+    │
+    ├─ auth.setup.ts verify session còn hợp lệ
+    │
+    └─ Với mỗi test @smoke:
+            ├─ Playwright mở Chromium (headless)
+            ├─ Load session → vào Shopify Admin đã login
+            ├─ Điều hướng đến app URL
+            ├─ Chờ iframe app load xong
+            ├─ Thực hiện actions (click, type, wait...)
+            └─ Assert kết quả → pass ✓ / fail ✗
+```
+
+### 3.3 Đọc kết quả terminal
+
+```
+✓ Avada Plaza › app load đúng @smoke (3.2s)
+✓ Avada Plaza › Image Manager hiển thị @smoke (5.1s)
+✗ Avada Plaza › Auto Optimize › click Optimize all (12.4s)
+  → TimeoutError: Waiting for selector '.toast-success'
+```
+
+- `✓` = pass
+- `✗` = fail — xem message lỗi → chạy `npm run report` để xem screenshot
 
 ---
 
-## Phase 5A+B — AI Test Generator
+## 4. AI Test Generator
 
-### Mục đích
-Tester mô tả bằng tiếng Việt → Claude Code đọc codebase → tự sinh spec file + Page Object đúng pattern.
+Khi cần test tính năng mới mà chưa có test file — thay vì tự viết code, mô tả bằng tiếng Việt và để AI sinh ra.
 
-### Luồng chi tiết
+### 4.1 Snapshot — "chụp" UI thật
+
+Trước khi sinh test, cần cho AI biết UI trông như thế nào:
 
 ```
-npm run test:generate
+npm run snapshot
     │
-    ├─ 1. Hỏi: app nào? branch nào? mô tả feature?
-    │
-    ├─ 2. context-sync (scripts/context-sync.js)
-    │       └→ git pull để lấy code mới nhất
-    │       └→ kiểm tra context cache còn valid không
-    │       └→ nếu cần: re-extract source code → .context/[app].md
-    │
-    ├─ 3. Inject context vào prompt
-    │       ├─ skills/shopify-test-gen/SKILL.md (rules + pattern)
-    │       ├─ .context/[app].md (source code hiện tại)
-    │       └─ snapshots/[app]/*.json (DOM info thật — nếu có)
-    │
-    ├─ 4. Claude Code đọc toàn bộ → viết:
-    │       ├─ helpers/pages/[Feature]Page.ts
-    │       └─ tests/[app]/[feature].spec.ts
-    │
-    └─ 5. Retry loop (tối đa 3 lần)
-            └→ nếu test fail → Claude Code xem lỗi → sửa → chạy lại
+    ├─ Playwright mở browser (headed), load session đã auth
+    ├─ Điều hướng đến app
+    └─ Với mỗi trang:
+            ├─ Chụp screenshot → snapshots/[app]/[page].png
+            └─ Extract DOM: buttons, inputs, links, headings
+                    └→ Lưu → snapshots/[app]/[page].json
 ```
 
-### Thành phần
+**File `snapshots/avadaPlaza/home.json` trông như thế này:**
+```json
+{
+  "buttons": ["Optimize Now", "Optimize All", "View Details"],
+  "inputs": [{"placeholder": "Search images...", "name": "search"}],
+  "headings": ["Image Manager", "Total images: 1,234"]
+}
+```
 
-- **`scripts/generate.js`** — orchestrator chính
-- **`scripts/context-sync.js`** — git pull + quản lý context cache
-- **`scripts/scan-source.js`** — đọc source code app → xuất `.context/[app].md`
-- **`skills/shopify-test-gen/SKILL.md`** — skill file dạy Claude Code:
-  - 7 bước rõ ràng: đọc context → phân tích → quyết định POM → viết → validate → báo cáo
-  - Rules bắt buộc: không hardcode handle, dùng `frame.*` (iframe), tag `@smoke`
-- **`skills/shopify-test-gen/examples/`** — ví dụ input/output để Claude Code follow
-
-### Kiểm chứng Phase 5A+B
-
+**Kiểm chứng:**
 ```bash
-npm run test:generate
+ls snapshots/avadaPlaza/
+# home.png  home.json  settings.json ...
+
+cat snapshots/avadaPlaza/home.json
+# ✅ Có buttons[], inputs[] với tên thật từ app
+# ❌ Rỗng {} → app chưa load kịp khi chụp
 ```
 
-Nhập mô tả test case đơn giản, ví dụ:
+### 4.2 Generate test
+
+```
+npm run test:generate
+    │
+    ├─ Hỏi: app nào? branch nào? mô tả feature?
+    │
+    ├─ context-sync:
+    │       └→ git pull lấy code mới nhất
+    │       └→ scan source code → .context/[app].md (cache)
+    │
+    ├─ Inject vào prompt Claude Code:
+    │       ├─ SKILL.md (rules: dùng iframe, không hardcode, tag @smoke)
+    │       ├─ .context/[app].md (toàn bộ source code app)
+    │       └─ snapshots/[app]/*.json (DOM thật — nếu có)
+    │
+    ├─ Claude Code phân tích → sinh:
+    │       ├─ helpers/pages/[Feature]Page.ts (Page Object mới)
+    │       └─ tests/[app]/[feature].spec.ts (test spec)
+    │
+    └─ Retry loop (tối đa 3 lần):
+            └→ Chạy test → nếu fail → Claude Code xem lỗi → sửa → chạy lại
+```
+
+**Mô tả tốt để AI sinh đúng:**
 ```
 App: Avada Plaza
-Trang: Dashboard
+Trang: Settings
 Flow:
-- Mở trang dashboard
-- Kiểm tra trang load không có lỗi
+- Mở trang Settings
+- Kiểm tra slider Compression Quality hiển thị
+- Thay đổi giá trị slider
+- Click Save
+- Kiểm tra toast "Settings saved" xuất hiện
 ```
 
-✅ **Pass:**
-- Claude Code tạo file `helpers/pages/DashboardPage.ts` và `tests/avada-plaza/dashboard.spec.ts`
-- Test file mới sử dụng `frame.*` (không phải `page.*`)
-- Không có hardcode URL hay handle
-- Tag `@smoke` xuất hiện trong tên test
+**Kiểm chứng sau generate:**
+```bash
+# File đã được tạo?
+ls helpers/pages/           # có [Feature]Page.ts mới
+ls tests/avada-plaza/       # có [feature].spec.ts mới
 
-❌ **Fail phổ biến:**
-- `claude: command not found` → cài Claude Code CLI
-- Test sinh ra fail ngay → xem log Claude Code → thường do selector sai → chạy `npm run snapshot` trước
+# Nội dung đúng pattern?
+grep "frame\." tests/avada-plaza/[feature].spec.ts   # phải dùng frame, không phải page
+grep "@smoke" tests/avada-plaza/[feature].spec.ts    # phải có smoke tag
+grep "AVADA_PLAZA_HANDLE\|APPS\." tests/avada-plaza/[feature].spec.ts  # không hardcode handle
+
+# Test chạy được?
+npm run test -- --grep "[tên feature]"
+```
 
 ---
 
-## Phase 5C — UI Snapshot + Context Injection
-
-### Mục đích
-Playwright "nhìn" vào app thật, chụp DOM thực tế → inject vào prompt Claude Code → selector chính xác hơn.
-
-### Luồng chi tiết
+## 5. Multi-Environment
 
 ```
-npm run snapshot
-    │
-    ├─ 1. Hỏi: chụp app nào? trang nào?
-    │
-    ├─ 2. Playwright mở browser (headed), load session đã auth
-    │
-    ├─ 3. Với mỗi trang:
-    │       ├─ Chụp screenshot → snapshots/[app]/[page].png
-    │       └─ Extract DOM info:
-    │               ├─ Buttons: text + aria-label + selector
-    │               ├─ Inputs: placeholder + name + type
-    │               ├─ Links: text + href
-    │               └─ Headings: text + level (h1/h2/h3)
-    │       └─ Lưu → snapshots/[app]/[page].json
-    │
-    └─ 4. Tạo snapshots/index.json (map: app → pages có snapshot)
+┌────────────────────────────────────────────────────┐
+│  local   → .env           + .auth/session.json     │
+│  staging → .env.staging   + .auth/session.staging  │
+│  prod    → .env.prod      + .auth/session.prod     │
+└────────────────────────────────────────────────────┘
 ```
 
-### Khi `npm run test:generate` chạy (có snapshot)
-
-```
-generate.js đọc snapshots/index.json
-    └→ Tìm snapshot của app được chọn
-           └→ Inject vào prompt:
-                  "Trang home có các button: ['Optimize Now', 'View Details', ...]
-                   Input: ['search-box (placeholder: Search images...)']"
-                  └→ Claude Code dùng tên thật → ít cần sửa selector
+Setup staging/prod:
+```bash
+cp .env.example .env.staging   # điền thông tin staging store
+npm run auth:staging            # đăng nhập staging
+npm run test:staging            # chạy test trên staging
 ```
 
-### Kiểm chứng Phase 5C
+---
+
+## 6. Báo cáo kết quả
 
 ```bash
-npm run snapshot
+npm run report
 ```
 
-Chọn app, chọn trang home. Sau khi chạy xong:
-
-```bash
-ls snapshots/avadaPlaza/         # phải có home.png và home.json
-cat snapshots/avadaPlaza/home.json | head -20  # phải có buttons[], inputs[]
-cat snapshots/index.json         # phải list avadaPlaza với pages: ["home"]
-```
-
-✅ **Pass:** Có file `.png` (screenshot thật) và `.json` (DOM info có nội dung)
-❌ **Fail:** File `.json` rỗng hoặc chỉ có `{}` → app load trong iframe, selector có thể cần điều chỉnh trong `snapshot.js`
+Browser mở HTML report, hiển thị:
+- **Danh sách tests** — pass ✓ / fail ✗ / skip
+- **Timeline** — từng bước trong test mất bao lâu
+- **Screenshot tự động** — chụp ngay lúc test fail
+- **Video replay** — xem lại toàn bộ test fail
+- **Trace viewer** — replay từng action (click, type, navigate...)
 
 ---
 
-## Luồng Tổng Hợp — Workflow Hàng Ngày
-
-```
-┌─────────────────────────────────────────────────────────┐
-│                  MỖI NGÀY / TRƯỚC DEPLOY                │
-│                                                         │
-│  1. npm run test:smoke      ← verify nhanh (~60s)       │
-│     ✓ pass → tiếp tục                                   │
-│     ✗ fail → npm run test:headed → xem browser          │
-└─────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────┐
-│              KHI CẦN TEST FEATURE MỚI                   │
-│                                                         │
-│  1. npm run snapshot        ← chụp UI hiện tại          │
-│  2. npm run test:generate   ← mô tả → AI sinh test      │
-│  3. npm run test:headed     ← xem kết quả trực quan     │
-│  4. npm run report          ← xem báo cáo chi tiết      │
-└─────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────┐
-│              KHI UI APP THAY ĐỔI                        │
-│                                                         │
-│  1. npm run snapshot        ← chụp lại UI mới           │
-│  2. Chạy lại test generate  ← AI dùng DOM mới           │
-│     HOẶC: sửa tay POM tương ứng trong helpers/pages/    │
-└─────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────┐
-│              STAGING / PRODUCTION                       │
-│                                                         │
-│  npm run auth:staging  → npm run test:staging           │
-│  npm run auth:prod     → npm run test:prod              │
-└─────────────────────────────────────────────────────────┘
-```
-
----
-
-## Bảng kiểm chứng nhanh (Checklist)
-
-| Kiểm tra | Lệnh | Kết quả mong đợi |
-|----------|------|-----------------|
-| Auth hoạt động | `cat .auth/session.json \| head -3` | Có `cookies` của Shopify |
-| Smoke tests pass | `npm run test:smoke` | `2 passed` trong < 60s |
-| Menu CLI hoạt động | `npm run test:pick` | Hiện menu 1-8 |
-| Snapshot tạo được | `ls snapshots/avadaPlaza/` | Có `.png` + `.json` |
-| DOM info hợp lệ | `cat snapshots/avadaPlaza/home.json` | Có `buttons`, `inputs` |
-| AI generator chạy | `npm run test:generate` | Tạo file `.spec.ts` mới |
-| Test mới pass | `npm run test -- --grep "feature vừa tạo"` | `1 passed` |
-| Multi-env | `npm run test:staging` | URL dùng staging store |
-| Report hiện | `npm run report` | Browser mở HTML report |
-
----
-
-## Sơ đồ thư mục liên quan
+## 7. Sơ đồ thư mục
 
 ```
 shopify-autotest/
-├── .auth/
-│   └── session.json           ← Session Shopify (Phase 3)
-├── .context/
-│   └── [app].md               ← Source code cache cho AI (Phase 5A)
-├── snapshots/
-│   ├── index.json             ← Index các snapshot có sẵn (Phase 5C)
-│   └── avadaPlaza/
-│       ├── home.png           ← Screenshot thật (Phase 5C)
-│       └── home.json          ← DOM info thật (Phase 5C)
-├── fixtures/
-│   └── index.ts               ← Custom fixtures (Phase 2)
+│
+├── .env                        ← Store + app handles (không commit)
+├── .auth/session.json          ← Session Shopify đã login (không commit)
+│
+├── .context/[app].md           ← Source code cache cho AI generator
+├── snapshots/                  ← DOM + screenshot thật (không commit)
+│   ├── index.json
+│   └── avadaPlaza/home.png + home.json
+│
 ├── helpers/
-│   ├── apps.ts                ← App registry (Phase 1)
-│   ├── shopify.ts             ← Utility functions
+│   ├── apps.ts                 ← Registry apps (đọc từ .env)
+│   ├── shopify.ts              ← goToApp(), getAppFrame(), waitForAppLoad()
 │   └── pages/
-│       ├── BasePage.ts        ← Base class POM (Phase 1)
-│       └── [Feature]Page.ts   ← Page Objects (Phase 1 + AI-generated)
+│       ├── BasePage.ts         ← Base class: waitForVisible, clickButton...
+│       └── ImageManagerPage.ts ← Page Object của Image Manager
+│
+├── fixtures/index.ts           ← Custom fixtures (auto-inject Page Objects)
+│
+├── tests/
+│   ├── auth.setup.ts           ← Verify/setup session trước khi test
+│   └── avada-plaza/
+│       ├── basic.spec.ts       ← Smoke: app load, không crash
+│       └── compress.spec.ts    ← Feature: auto optimize, manual compress
+│
 ├── scripts/
-│   ├── generate.js            ← AI generator orchestrator (Phase 5A)
-│   ├── snapshot.js            ← UI snapshot tool (Phase 5C)
-│   ├── context-sync.js        ← Git sync + context cache (Phase 5A)
-│   ├── scan-source.js         ← Source extractor (Phase 5A)
-│   ├── setup.js               ← Setup wizard (Phase 4)
-│   └── pick.js                ← Interactive menu (Phase 4)
-├── skills/
-│   └── shopify-test-gen/
-│       └── SKILL.md           ← Rules cho Claude Code (Phase 5B)
-└── tests/
-    ├── auth.setup.ts          ← Auth setup (Phase 3)
-    └── avada-plaza/
-        ├── basic.spec.ts      ← Smoke tests (Phase 2)
-        └── compress.spec.ts   ← Feature tests (Phase 1)
+│   ├── generate.js             ← AI generator orchestrator
+│   ├── snapshot.js             ← Chụp UI + extract DOM
+│   ├── context-sync.js         ← Git sync + quản lý context cache
+│   ├── scan-source.js          ← Đọc source code → .context/[app].md
+│   ├── setup.js                ← Setup wizard (tạo .env)
+│   └── pick.js                 ← Menu tương tác
+│
+├── skills/shopify-test-gen/
+│   └── SKILL.md                ← Rules Claude Code sinh test đúng pattern
+│
+└── playwright.config.ts        ← Config: env, auth, retry, screenshot on fail
 ```
 
 ---
 
-*Tài liệu này mô tả trạng thái dự án tại v1.4.0. Cập nhật khi có phase mới.*
+## 8. Checklist kiểm chứng nhanh
+
+| # | Kiểm tra | Lệnh | Kết quả mong đợi |
+|---|----------|------|-----------------|
+| 1 | Session hợp lệ | `cat .auth/session.json \| grep shopify` | Có cookies Shopify |
+| 2 | Smoke tests pass | `npm run test:smoke` | `2+ passed` trong < 60s |
+| 3 | Menu CLI hoạt động | `npm run test:pick` | Hiện menu 1-8 |
+| 4 | Snapshot tạo được | `npm run snapshot` → `ls snapshots/avadaPlaza/` | Có `.png` + `.json` |
+| 5 | DOM info hợp lệ | `cat snapshots/avadaPlaza/home.json` | Có `buttons[]`, `inputs[]` |
+| 6 | AI generator chạy | `npm run test:generate` | Tạo file `.spec.ts` mới |
+| 7 | Test mới đúng pattern | `grep "frame\." tests/...spec.ts` | Dùng `frame.*` không phải `page.*` |
+| 8 | Test mới pass | `npm run test -- --grep "tên test"` | `1 passed` |
+| 9 | Multi-env | `npm run test:staging` | URL dùng staging store |
+| 10 | Report hiện | `npm run report` | Browser mở HTML report |
+
+---
+
+*Phiên bản: v1.4.0 — Cập nhật khi có thay đổi lớn về kiến trúc.*
