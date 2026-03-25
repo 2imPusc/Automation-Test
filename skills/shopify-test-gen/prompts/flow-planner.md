@@ -23,6 +23,7 @@ Return ONLY valid JSON (no markdown, no explanation):
   "scenarios": [
     {
       "name": "Optimize all — no confirmation modal (v2 regression)",
+      "description": "Click Optimize now → Optimize all. Kỳ vọng: KHÔNG hiện confirmation dialog (v2 đã bỏ). Toast thông báo phải xuất hiện trong 5 giây.",
       "type": "regression|smoke|guard|edge-case",
       "priority": "high|medium|low",
       "steps": [
@@ -59,5 +60,6 @@ Return ONLY valid JSON (no markdown, no explanation):
    - `edge-case`: rare scenarios (rate limits, empty states, concurrent actions)
 5. Tag the most important scenario `@smoke`
 6. Keep scenarios to 3-6 per feature. Quality over quantity.
+9. **description** must be in Vietnamese, 1-3 sentences. Explain what the test does AND expected behavior. Written for human testers to review.
 7. If description is vague, use diffSummary to infer what changed and test accordingly
 8. Bugs (if provided) are ADDITIONAL scenarios — don't replace the main feature test

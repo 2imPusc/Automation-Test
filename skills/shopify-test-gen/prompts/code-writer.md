@@ -39,6 +39,14 @@ fixtures/index.ts                  ← available fixtures
 - **Wrap actions** in `test.step()` — improves HTML report readability
 - **Tag first test** `@smoke` — included in smoke suite
 - **Add `console.log('✅ ...')`** after each milestone action
+- **JSDoc description**: If a scenario has a `description` field, add it as a JSDoc comment above the test block:
+```typescript
+/**
+ * Click Optimize now → Optimize all. Kỳ vọng: KHÔNG hiện confirmation dialog.
+ * Toast thông báo phải xuất hiện trong 5 giây.
+ */
+test('Optimize all — no confirmation modal', async ({ imageManager }) => {
+```
 
 ### ⚠️ FILE PATHS: Always use full paths from feature context
 When the feature context lists source files, reference them by full path:
