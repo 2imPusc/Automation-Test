@@ -1,5 +1,6 @@
 import { Page, FrameLocator, Locator } from '@playwright/test';
 import { BasePage } from './BasePage';
+import { t, tRegex } from '../locale';
 
 /**
  * Page Object for the Avada Plaza Image Manager page.
@@ -47,32 +48,34 @@ export class ImageManagerPage extends BasePage {
     ].join(', ')).first();
   }
 
-  /**
-   * The "Optimize now" / "Jetzt optimieren" main CTA button.
-   * App may render in English or German depending on store locale.
-   */
+  // ── Locale-aware locators ───────────────────────────────────────────────
+  // Uses t()/tRegex() from helpers/locale.ts — auto-resolves to store locale.
+  // Set TEST_LOCALE=de (or fr, vi, etc.) to test a specific language.
+
+  /** The "Optimize now" main CTA button */
   get optimizeNowButton(): Locator {
-    return this.frame.locator('text=/Optimize now|Jetzt optimieren/i').first();
+    return this.frame.locator(`text=${tRegex('ButtonOptimize.labelOtm').source}`).first();
   }
 
-  /** The "Compress image" / "Bild komprimieren" action button */
+  /** The "Compress image" action button (manual mode) */
   get compressButton(): Locator {
-    return this.frame.locator('text=/Compress image|Bild komprimieren/i').first();
+    return this.frame.locator(`text=${tRegex('ManualCompression.Compress').source}`).first();
   }
 
-  /** The "Optimize all" / "Alle optimieren" action button */
+  /** The "Optimize all" dropdown option */
   get optimizeAllButton(): Locator {
-    return this.frame.locator('text=/Optimize all|Alle optimieren/i').first();
+    return this.frame.locator(`text=${tRegex('ButtonOptimize.optionAll').source}`).first();
   }
 
-  /** The "Optimize manually" / "Manuell optimieren" button */
+  /** The "Optimize manually" mode switcher */
   get manualOptimizeButton(): Locator {
-    return this.frame.locator('text=/Optimize manually|Manuell optimieren/i').first();
+    return this.frame.locator(`text=${tRegex('Optimizer.OptimizeManually').source}`).first();
   }
 
-  /** Empty state text when no images are available */
+  /** Empty state — no images to optimize */
   get emptyState(): Locator {
-    return this.frame.locator('text=/no images? (to optimize|in your store)|keine Bilder/i').first();
+    // Fallback to generic pattern since there's no specific i18n key
+    return this.frame.locator('text=/no images|keine Bilder|aucune image/i').first();
   }
 
   // ── Actions ───────────────────────────────────────────────────────────────
@@ -155,14 +158,16 @@ export class ImageManagerPage extends BasePage {
 
   /**
    * Wait for the Image Manager content to finish loading.
-   * Detects either English or German UI text.
+   * Detects the page title or optimize button in any locale.
    */
   async waitForLoad(): Promise<void> {
     return this.step('ImageManager: wait for content to load', async () => {
-      // Wait for the optimize button (EN or DE) OR the compression heading
-      await this.frame.locator(
-        'text=/Optimize now|Jetzt optimieren|Kompression|Compression/i'
-      ).first().waitFor({ state: 'visible', timeout: 20000 });
+      // Wait for page title (in any locale) or optimize button
+      const title = tRegex('ImageManager.title');   // "Compression" / "Kompression"
+      const btn = tRegex('ButtonOptimize.labelOtm'); // "Optimize now" / "Jetzt optimieren"
+      const combined = new RegExp(`${title.source}|${btn.source}`, 'i');
+      await this.frame.locator(`text=${combined.source}`).first()
+        .waitFor({ state: 'visible', timeout: 20000 });
     });
   }
 

@@ -15,6 +15,7 @@ import { test as base, expect } from '@playwright/test';
 import { goToApp } from '../helpers/shopify';
 import { APPS } from '../helpers/apps';
 import { ImageManagerPage } from '../helpers/pages/ImageManagerPage';
+import { loadLocale } from '../helpers/locale';
 
 /** Fixture types added on top of Playwright's built-in fixtures. */
 type AppFixtures = {
@@ -33,6 +34,8 @@ type AppFixtures = {
  */
 export const test = base.extend<AppFixtures>({
   imageManager: async ({ page }, use) => {
+    // Auto-load locale for the app (TEST_LOCALE env var or default 'en')
+    loadLocale('avadaPlaza', process.env.TEST_LOCALE);
     const frame = await goToApp(page, APPS.avadaPlaza.handle);
     const imageManager = new ImageManagerPage(page, frame);
     await imageManager.goTo();
