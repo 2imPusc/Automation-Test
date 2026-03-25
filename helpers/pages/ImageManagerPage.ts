@@ -110,37 +110,37 @@ export class ImageManagerPage extends BasePage {
   }
 
   /**
-   * Navigate to the Image Manager section via the Shopify Admin nav link.
-   * Assumes the app is already open (goToApp was called externally).
+   * Navigate to the Image Manager page.
    * 
-   * Note: The nav link text may be "Image optimizer" or "Image manager" depending
-   * on the app version / locale. We try both.
+   * Strategy: Navigate directly via URL instead of clicking sidebar nav links.
+   * Shopify's embedded app nav links are often [disabled] due to Dev Console
+   * or app loading state, making click-based nav unreliable.
+   * 
+   * The URL pattern is: /store/{store}/apps/{handle}/embed/image-manager
+   * We extract the app handle from the current URL or use the known handle.
    */
   async goTo(): Promise<void> {
     return this.step('ImageManager: navigate to Image Manager', async () => {
       await this.closeShopifyOverlays();
 
-      // Wait for nav links to be interactive (may be [disabled] right after load)
-      await this.page.waitForTimeout(1000);
+      // Extract app handle from current page URL
+      const currentUrl = this.page.url();
+      const handleMatch = currentUrl.match(/\/apps\/([^/]+)/);
+      const appHandle = handleMatch?.[1] || '';
 
-      // Try multiple possible nav link names
-      const navLink = this.page.getByRole('link', { name: /image (manager|optimizer)/i }).first();
-      await navLink.waitFor({ state: 'visible', timeout: 15000 });
+      if (appHandle) {
+        // Direct URL navigation — most reliable
+        const storeHandle = process.env.STORE_HANDLE || 'dophuc-store';
+        const targetUrl = `https://admin.shopify.com/store/${storeHandle}/apps/${appHandle}/embed/image-manager`;
+        await this.page.goto(targetUrl);
+        await this.page.waitForSelector('iframe[name="app-iframe"]', { timeout: 30000 });
+      } else {
+        // Fallback: try clicking nav link
+        const navLink = this.page.getByRole('link', { name: /image (manager|optimizer)/i }).first();
+        await navLink.waitFor({ state: 'visible', timeout: 15000 });
+        await navLink.click({ force: true }); // force bypasses disabled state
+      }
 
-      // Shopify nav links can be temporarily disabled during app load
-      // Wait for the link to become clickable
-      await this.page.waitForFunction(
-        (selector) => {
-          const link = document.querySelector(selector);
-          return link && !link.hasAttribute('disabled') && !link.getAttribute('aria-disabled');
-        },
-        'a[href*="image-manager"], a[href*="image-optimizer"]',
-        { timeout: 15000 }
-      ).catch(() => {
-        // Fallback: click anyway even if disabled attribute persists
-      });
-
-      await navLink.click();
       await this.waitForLoad();
     });
   }
@@ -252,9 +252,12 @@ export class ImageManagerPage extends BasePage {
    */
   async goToCompression(): Promise<void> {
     return this.step('ImageManager: navigate to compression page', async () => {
-      await this.closeShopifyOverlays();
-      await this.page.getByRole('link', { name: /image (manager|optimizer)/i }).first().click();
-      await this.frame.getByRole('link', { name: /compression/i }).click();
+      await this.goTo();
+      // Switch to Compression tab inside the iframe
+      const compressionLink = this.frame.getByRole('link', { name: /compression/i });
+      if (await compressionLink.isVisible({ timeout: 5000 }).catch(() => false)) {
+        await compressionLink.click();
+      }
       await this.waitForSkeletonGone();
     });
   }
