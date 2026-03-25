@@ -15,7 +15,7 @@
     "test:staging": "cross-env ENV=staging playwright test --project=chromium",
     "test:prod": "cross-env ENV=prod playwright test --project=chromium",
     "test:pick": "node scripts/pick.js",
-    "test:generate": "node scripts/generate.js",
+    "test:generate": "echo 'DEPRECATED: Use Smart Run UI instead. Legacy CLI: node scripts/generate.legacy.js'",
     "test:run": "node scripts/run.js",
     "snapshot": "node scripts/snapshot.js",
     "scan-source": "node scripts/scan-source.js",
