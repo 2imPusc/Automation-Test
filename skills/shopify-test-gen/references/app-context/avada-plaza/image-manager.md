@@ -25,20 +25,24 @@ await frame.getByRole('link', { name: 'Compression' }).click();
 await frame.getByRole('link', { name: 'Alt text optimizer' }).click();
 ```
 
+## ⚠️ LOCALE WARNING
+
+The app UI may render in **German** depending on store locale settings.
+All selectors MUST handle both English and German text.
+Use regex patterns like: `/Optimize now|Jetzt optimieren/i`
+
 ## Compression Tab — Key UI Text
 
-### Buttons & CTAs
+### Buttons & CTAs (English / German)
 ```
-"Optimize now"                    ← main CTA, opens optimize panel
-"Optimize all"                    ← dropdown: optimize all images
-"Optimize unoptimized"            ← dropdown: only unoptimized
-"SAVE & OPTIMIZE"                 ← when settings unsaved
-"Optimize manually"               ← switch to manual mode
-"Compress image"                  ← action on selected image(s)
-"Optimize all (alt + compress)"   ← bulk action in manual mode
-"Revert all images"               ← revert CTA
-"Revert"                          ← revert selected
-"Revert alt"                      ← revert alt text only
+"Optimize now" / "Jetzt optimieren"           ← main CTA, opens optimize panel
+"Optimize all" / "Alle optimieren"            ← dropdown: optimize all images
+"Optimize unoptimized"                         ← dropdown: only unoptimized
+"SAVE & OPTIMIZE"                              ← when settings unsaved
+"Optimize manually" / "Manuell optimieren"    ← switch to manual mode
+"Compress image" / "Bild komprimieren"        ← action on selected image(s)
+"Revert all images"                            ← revert CTA
+"Revert" / "Rückgängig"                       ← revert selected
 ```
 
 ### Statistics Labels (assertions)

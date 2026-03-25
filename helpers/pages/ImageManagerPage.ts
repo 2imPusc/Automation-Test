@@ -47,24 +47,32 @@ export class ImageManagerPage extends BasePage {
     ].join(', ')).first();
   }
 
-  /** The "Optimize now" main CTA button */
+  /**
+   * The "Optimize now" / "Jetzt optimieren" main CTA button.
+   * App may render in English or German depending on store locale.
+   */
   get optimizeNowButton(): Locator {
-    return this.frame.getByText('Optimize now');
+    return this.frame.locator('text=/Optimize now|Jetzt optimieren/i').first();
   }
 
-  /** The "Compress image" action button */
+  /** The "Compress image" / "Bild komprimieren" action button */
   get compressButton(): Locator {
-    return this.frame.getByRole('button', { name: 'Compress image' });
+    return this.frame.locator('text=/Compress image|Bild komprimieren/i').first();
   }
 
-  /** The "Optimize all" action button */
+  /** The "Optimize all" / "Alle optimieren" action button */
   get optimizeAllButton(): Locator {
-    return this.frame.getByRole('button', { name: 'Optimize all' });
+    return this.frame.locator('text=/Optimize all|Alle optimieren/i').first();
+  }
+
+  /** The "Optimize manually" / "Manuell optimieren" button */
+  get manualOptimizeButton(): Locator {
+    return this.frame.locator('text=/Optimize manually|Manuell optimieren/i').first();
   }
 
   /** Empty state text when no images are available */
   get emptyState(): Locator {
-    return this.frame.getByText(/no images? (to optimize|in your store)/i);
+    return this.frame.locator('text=/no images? (to optimize|in your store)|keine Bilder/i').first();
   }
 
   // ── Actions ───────────────────────────────────────────────────────────────
@@ -147,19 +155,23 @@ export class ImageManagerPage extends BasePage {
 
   /**
    * Wait for the Image Manager content to finish loading.
+   * Detects either English or German UI text.
    */
   async waitForLoad(): Promise<void> {
     return this.step('ImageManager: wait for content to load', async () => {
-      await this.frame.getByText('Optimize now').waitFor({ state: 'visible', timeout: 20000 });
+      // Wait for the optimize button (EN or DE) OR the compression heading
+      await this.frame.locator(
+        'text=/Optimize now|Jetzt optimieren|Kompression|Compression/i'
+      ).first().waitFor({ state: 'visible', timeout: 20000 });
     });
   }
 
   /**
-   * Click the "Optimize now" button to open the optimize panel.
+   * Click the "Optimize now" / "Jetzt optimieren" button.
    */
   async clickOptimizeNow(): Promise<void> {
     return this.step('ImageManager: click Optimize now', async () => {
-      await this.frame.getByText('Optimize now').click();
+      await this.optimizeNowButton.click();
     });
   }
 
@@ -177,7 +189,7 @@ export class ImageManagerPage extends BasePage {
    */
   async switchToManualMode(): Promise<void> {
     return this.step('ImageManager: switch to manual mode', async () => {
-      await this.frame.getByText('Optimize manually').click();
+      await this.manualOptimizeButton.click();
     });
   }
 
