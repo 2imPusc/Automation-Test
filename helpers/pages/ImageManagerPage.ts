@@ -141,10 +141,13 @@ export class ImageManagerPage extends BasePage {
    */
   async waitForLoad(): Promise<void> {
     return this.step('ImageManager: wait for content to load', async () => {
-      // Wait for page title or optimize button (any locale)
-      const title = tRegex('ImageManager.title');
-      const btn = tRegex('ButtonOptimize.labelOtm');
-      await this.frame.locator(`text=/${title.source}|${btn.source}/i`).first()
+      // Wait for the page heading OR the optimize button (any locale).
+      // Use getByRole('heading') to avoid matching hidden tab label spans
+      // that Polaris renders for selected tabs.
+      const titleRegex = tRegex('ImageManager.title');
+      await this.frame.getByRole('heading', { name: titleRegex })
+        .or(this.frame.locator(tLoc('ButtonOptimize.labelOtm')))
+        .first()
         .waitFor({ state: 'visible', timeout: 20000 });
     });
   }
@@ -181,9 +184,11 @@ export class ImageManagerPage extends BasePage {
    */
   async selectFirstImage(): Promise<void> {
     return this.step('ImageManager: select first image', async () => {
-      const firstImageCheckbox = this.frame.getByRole('cell', { name: 'Select Item' }).first();
-      await firstImageCheckbox.waitFor({ state: 'visible', timeout: 10000 });
-      await firstImageCheckbox.click();
+      // Polaris IndexTable: checkboxes may be visually hidden — use nth(1) to skip
+      // the "select all" header checkbox (index 0), then force click the first row checkbox.
+      const rowCheckbox = this.frame.locator('input[type="checkbox"]').nth(1);
+      await rowCheckbox.waitFor({ state: 'attached', timeout: 10000 });
+      await rowCheckbox.click({ force: true });
     });
   }
 
@@ -230,7 +235,11 @@ export class ImageManagerPage extends BasePage {
 
   /** Image table rows (actual data rows, not header) */
   get imageTableRows(): Locator {
-    return this.frame.locator('table tbody tr, [class*="IndexTable"] [class*="Row"]');
+    // Polaris IndexTable uses role="rowgroup" + role="row"; data rows are in the last rowgroup
+    return this.frame
+      .locator('[role="rowgroup"]')
+      .last()
+      .locator('[role="row"]');
   }
 
   /** Before/after image compare view */
@@ -307,6 +316,30 @@ export class ImageManagerPage extends BasePage {
         .first();
       await optimizedRow.waitFor({ state: 'visible', timeout: 15000 });
       await optimizedRow.click();
+    });
+  }
+
+  /**
+   * Navigate to the Alt text optimizer tab within Image Manager.
+   */
+  async goToAltTextOptimizer(): Promise<void> {
+    return this.step('ImageManager: navigate to Alt text optimizer tab', async () => {
+      const altTab = this.frame.getByRole('tab', { name: tRegex('ImageManager.tabs.altTextOptimizer') });
+      await altTab.waitFor({ state: 'visible', timeout: 10000 });
+      await altTab.click();
+      await this.page.waitForTimeout(1000);
+    });
+  }
+
+  /**
+   * Navigate to the Compression tab within Image Manager.
+   */
+  async goToCompressionTab(): Promise<void> {
+    return this.step('ImageManager: navigate to Compression tab', async () => {
+      const compTab = this.frame.getByRole('tab', { name: tRegex('ImageManager.tabs.compression') });
+      await compTab.waitFor({ state: 'visible', timeout: 10000 });
+      await compTab.click();
+      await this.waitForSkeletonGone();
     });
   }
 

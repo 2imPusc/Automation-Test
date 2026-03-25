@@ -40,6 +40,34 @@ fixtures/index.ts                  ← available fixtures
 - **Tag first test** `@smoke` — included in smoke suite
 - **Add `console.log('✅ ...')`** after each milestone action
 
+### ⚠️ FILE PATHS: Always use full paths from feature context
+When the feature context lists source files, reference them by full path:
+```typescript
+// ❌ WRONG — ambiguous, multiple index.ts exist
+// "See index.ts for logic"
+// ✅ CORRECT
+// "See packages/assets/src/pages/ImageManager/index.ts"
+```
+
+### ⚠️ POLARIS UI: Use role-based selectors to avoid strict mode violations
+Polaris renders UI with hidden/duplicate elements — always use the most specific role:
+```typescript
+// ❌ WRONG — text= matches hidden tab spans, headings, status text → strict mode violation
+frame.locator('text=/Compression/i')
+
+// ✅ CORRECT — tabs
+frame.getByRole('tab', { name: tRegex('ImageManager.tabs.compression') })
+
+// ✅ CORRECT — page heading (waitForLoad)
+frame.getByRole('heading', { name: tRegex('ImageManager.title') })
+
+// ✅ CORRECT — Polaris IndexTable checkboxes (hidden until hover)
+frame.locator('input[type="checkbox"]').nth(1).click({ force: true })
+
+// ✅ CORRECT — exclude Shopify Sidekick from dialog assertions
+page.locator('[role="dialog"]:not(#sidekick)')
+```
+
 ### ⚠️ LOCALE: Never hardcode UI text strings!
 The app supports multiple languages. All user-visible text must use the locale helper:
 
