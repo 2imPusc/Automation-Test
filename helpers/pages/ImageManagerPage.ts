@@ -47,6 +47,11 @@ export class ImageManagerPage extends BasePage {
     ].join(', ')).first();
   }
 
+  /** The "Optimize now" main CTA button */
+  get optimizeNowButton(): Locator {
+    return this.frame.getByText('Optimize now');
+  }
+
   /** The "Compress image" action button */
   get compressButton(): Locator {
     return this.frame.getByRole('button', { name: 'Compress image' });
@@ -55,6 +60,11 @@ export class ImageManagerPage extends BasePage {
   /** The "Optimize all" action button */
   get optimizeAllButton(): Locator {
     return this.frame.getByRole('button', { name: 'Optimize all' });
+  }
+
+  /** Empty state text when no images are available */
+  get emptyState(): Locator {
+    return this.frame.getByText(/no images? (to optimize|in your store)/i);
   }
 
   // ── Actions ───────────────────────────────────────────────────────────────
@@ -164,6 +174,28 @@ export class ImageManagerPage extends BasePage {
   /** Image compare table inside the compression page */
   get compareTable(): Locator {
     return this.frame.locator('table').first();
+  }
+
+  /** Banner (info/success) element — used for progress and result banners */
+  get banner(): Locator {
+    return this.frame.locator('[class*="Banner" i], [role="status"]').first();
+  }
+
+  /** Filter bar / IndexFilters area */
+  get filterBar(): Locator {
+    return this.frame.locator('.Avada-ImageManager-Filter, [class*="IndexFilters"]').first();
+  }
+
+  /** Image table rows (actual data rows, not header) */
+  get imageTableRows(): Locator {
+    return this.frame.locator('table tbody tr, [class*="IndexTable"] [class*="Row"]');
+  }
+
+  /** Before/after image compare view */
+  get imageCompareView(): Locator {
+    return this.frame.locator(
+      '[class*="compare" i], [class*="Compare" i], [class*="ImageView" i]'
+    ).first();
   }
 
   // ── Actions (v2 additions) ────────────────────────────────────────────────
