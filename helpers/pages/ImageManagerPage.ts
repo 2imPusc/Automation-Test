@@ -85,33 +85,22 @@ export class ImageManagerPage extends BasePage {
    */
   async closeShopifyOverlays(): Promise<void> {
     return this.step('ImageManager: close Shopify overlays (Sidekick, DevConsole)', async () => {
-      // 1. Close Sidekick dialog (covers the iframe, making all elements "hidden")
-      const sidekickDialog = this.page.locator('dialog:has-text("Sidekick")');
-      if (await sidekickDialog.isVisible({ timeout: 2000 }).catch(() => false)) {
-        // Press Escape to dismiss — most reliable for Shopify dialogs
-        await this.page.keyboard.press('Escape');
-        await sidekickDialog.waitFor({ state: 'hidden', timeout: 3000 }).catch(async () => {
-          // Fallback: click outside dialog to dismiss
-          await this.page.mouse.click(10, 10);
-          await sidekickDialog.waitFor({ state: 'hidden', timeout: 2000 }).catch(() => {});
+      // 1. Force-close ALL dialogs (Sidekick, etc.) via JS
+      //    Sidekick has no close button — must use dialog.close() API
+      await this.page.evaluate(() => {
+        document.querySelectorAll('dialog[open]').forEach(d => {
+          (d as HTMLDialogElement).close();
         });
-      }
+        // Fallback: remove from DOM if close() didn't work
+        document.querySelectorAll('dialog').forEach(d => {
+          if (d.hasAttribute('open')) d.remove();
+        });
+      });
 
-      // 2. Close Dev Console (can cause nav links to be [disabled])
-      const devConsole = this.page.getByRole('button', { name: 'Close Dev Console' });
-      if (await devConsole.isVisible({ timeout: 1500 }).catch(() => false)) {
-        await devConsole.click();
-        await this.page.waitForTimeout(500);
-      } else {
-        // Try the "hide" buttons near dev console
-        const hideButtons = this.page.locator('button:has-text("hide")');
-        const count = await hideButtons.count();
-        for (let i = count - 1; i >= 0; i--) {
-          if (await hideButtons.nth(i).isVisible({ timeout: 500 }).catch(() => false)) {
-            await hideButtons.nth(i).click();
-            break;
-          }
-        }
+      // 2. Close Dev Console overlay
+      const devConsoleClose = this.page.getByRole('button', { name: 'Close Dev Console' });
+      if (await devConsoleClose.isVisible({ timeout: 1500 }).catch(() => false)) {
+        await devConsoleClose.click();
       }
     });
   }
