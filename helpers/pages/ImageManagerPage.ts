@@ -85,17 +85,13 @@ export class ImageManagerPage extends BasePage {
    */
   async closeShopifyOverlays(): Promise<void> {
     return this.step('ImageManager: close Shopify overlays (Sidekick, DevConsole)', async () => {
-      // 1. Force-close ALL dialogs (Sidekick, etc.) via JS
-      //    Sidekick has no close button — must use dialog.close() API
+      // 1. Remove ALL dialog elements from DOM (Sidekick, etc.)
+      //    Sidekick has no close button and dialog.close() doesn't always work.
+      //    Removing from DOM is the only reliable approach.
       await this.page.evaluate(() => {
-        document.querySelectorAll('dialog[open]').forEach(d => {
-          (d as HTMLDialogElement).close();
-        });
-        // Fallback: remove from DOM if close() didn't work
-        document.querySelectorAll('dialog').forEach(d => {
-          if (d.hasAttribute('open')) d.remove();
-        });
+        document.querySelectorAll('dialog').forEach(d => d.remove());
       });
+      await this.page.waitForTimeout(300);
 
       // 2. Close Dev Console overlay
       const devConsoleClose = this.page.getByRole('button', { name: 'Close Dev Console' });
@@ -117,26 +113,24 @@ export class ImageManagerPage extends BasePage {
    */
   async goTo(): Promise<void> {
     return this.step('ImageManager: navigate to Image Manager', async () => {
-      await this.closeShopifyOverlays();
-
       // Extract app handle from current page URL
       const currentUrl = this.page.url();
       const handleMatch = currentUrl.match(/\/apps\/([^/]+)/);
       const appHandle = handleMatch?.[1] || '';
 
       if (appHandle) {
-        // Direct URL navigation — most reliable
         const storeHandle = process.env.STORE_HANDLE || 'dophuc-store';
         const targetUrl = `https://admin.shopify.com/store/${storeHandle}/apps/${appHandle}/embed/image-manager`;
         await this.page.goto(targetUrl);
         await this.page.waitForSelector('iframe[name="app-iframe"]', { timeout: 30000 });
       } else {
-        // Fallback: try clicking nav link
         const navLink = this.page.getByRole('link', { name: /image (manager|optimizer)/i }).first();
         await navLink.waitFor({ state: 'visible', timeout: 15000 });
-        await navLink.click({ force: true }); // force bypasses disabled state
+        await navLink.click({ force: true });
       }
 
+      // Close overlays AFTER navigation — Sidekick re-opens on page load
+      await this.closeShopifyOverlays();
       await this.waitForLoad();
     });
   }
