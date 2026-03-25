@@ -62,6 +62,15 @@ export default defineConfig({
       use: {
         ...devices['Desktop Chrome'],
         storageState: AUTH_FILE,
+        // Anti-bot: giả lập browser thật để tránh Cloudflare chặn
+        channel: 'chrome',  // dùng Chrome thật thay vì Chromium bundled
+        launchOptions: {
+          args: [
+            '--disable-blink-features=AutomationControlled',  // ẩn navigator.webdriver
+            '--no-sandbox',
+            '--disable-dev-shm-usage',
+          ],
+        },
       },
     },
   ],
