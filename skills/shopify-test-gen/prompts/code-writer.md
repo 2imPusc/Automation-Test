@@ -36,11 +36,39 @@ fixtures/index.ts                  ← available fixtures
 - **Never hardcode handles** — use `APPS.[key].handle` from `helpers/apps.ts`
 - **Never hardcode store URL** — use `ADMIN_BASE` from `helpers/shopify.ts`
 - **Iframe content** — always `frame.locator()`, never `page.locator()`
-- **Toast text** — use EXACT string from feature context "Toast Messages" section
-- **Button names** — use EXACT label from feature context "Buttons" section
 - **Wrap actions** in `test.step()` — improves HTML report readability
 - **Tag first test** `@smoke` — included in smoke suite
 - **Add `console.log('✅ ...')`** after each milestone action
+
+### ⚠️ LOCALE: Never hardcode UI text strings!
+The app supports multiple languages. All user-visible text must use the locale helper:
+
+```typescript
+import { t, tRegex } from '../../helpers/locale';
+
+// ❌ WRONG — hardcoded English, will fail on German/French stores
+await frame.getByText('Optimize now').click();
+await expect(toast).toContainText('Optimization started');
+
+// ✅ CORRECT — resolves to the correct language at runtime
+await frame.getByText(t('ButtonOptimize.labelOtm')).click();
+await expect(toast).toContainText(t('Optimizer.Toast.started'));
+
+// ✅ ALSO CORRECT — regex matching both EN and current locale
+await frame.locator(`text=${tRegex('ButtonOptimize.labelOtm').source}`).click();
+```
+
+**Key locale mappings (from app origin.json):**
+- `ButtonOptimize.labelOtm` → "Optimize now"
+- `ButtonOptimize.optionAll` → "Optimize all"
+- `Optimizer.OptimizeManually` → "Optimize manually"
+- `ManualCompression.Compress` → "Compress image"
+- `ImageManager.title` → "Compression"
+- `ImageManager.tabs.compression` → "Compression"
+- `ImageManager.tabs.altTextOptimizer` → "Alt text optimizer"
+
+For toast messages and other text: search the feature context for the i18n key path.
+If unsure of the exact key, use `tRegex()` with the closest key to match both languages.
 
 ### File structure
 - POM: `helpers/pages/[PageName]Page.ts` extending `BasePage`
