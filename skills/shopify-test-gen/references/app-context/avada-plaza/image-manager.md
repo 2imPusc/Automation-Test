@@ -13,9 +13,12 @@ Source: `pages/ImageManager/`, `pages/ManualCompression/`
 
 ## Navigation
 
+**Important:** The Shopify Admin sidebar nav link is labeled **"Image optimizer"** (not "Image manager").
+The app may also have overlays (Sidekick dialog, Dev Console) that must be closed first.
+
 ```typescript
-// Navigate to Image Manager
-await page.getByRole('link', { name: 'Image manager' }).click();
+// Navigate to Image Manager (nav link text is "Image optimizer")
+await page.getByRole('link', { name: /image (manager|optimizer)/i }).first().click();
 
 // Switch tabs
 await frame.getByRole('link', { name: 'Compression' }).click();

@@ -70,18 +70,41 @@ export class ImageManagerPage extends BasePage {
   // ── Actions ───────────────────────────────────────────────────────────────
 
   /**
-   * Close the Shopify Sidekick panel if it is open.
-   * Sidekick can auto-open and obscure the app UI.
+   * Close the Shopify Sidekick panel and Dev Console if they are open.
+   * These overlays can obscure the app UI and cause [disabled] state on nav links.
    */
-  async closeShopifySidekick(): Promise<void> {
-    return this.step('ImageManager: close Shopify Sidekick if open', async () => {
-      const sidekick = this.page.getByRole('button', { name: 'Close Sidekick' });
-      const hideBtns = this.page.getByRole('button', { name: 'hide' });
+  async closeShopifyOverlays(): Promise<void> {
+    return this.step('ImageManager: close Shopify overlays (Sidekick, DevConsole)', async () => {
+      // 1. Close Sidekick dialog
+      const sidekickDialog = this.page.locator('dialog:has-text("Sidekick")');
+      if (await sidekickDialog.isVisible({ timeout: 2000 }).catch(() => false)) {
+        // Try the close/hide buttons within or near the sidekick
+        const closeBtn = this.page.getByRole('button', { name: /close sidekick/i });
+        const hideBtn = this.page.locator('dialog:has-text("Sidekick") button:has-text("hide")');
+        if (await closeBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
+          await closeBtn.click();
+        } else if (await hideBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
+          await hideBtn.click();
+        }
+        // Wait for sidekick to disappear
+        await sidekickDialog.waitFor({ state: 'hidden', timeout: 3000 }).catch(() => {});
+      }
 
-      if (await sidekick.isVisible({ timeout: 3000 }).catch(() => false)) {
-        await sidekick.click();
-      } else if (await hideBtns.nth(1).isVisible({ timeout: 2000 }).catch(() => false)) {
-        await hideBtns.nth(1).click();
+      // 2. Close Dev Console (can cause nav links to be [disabled])
+      const devConsole = this.page.getByRole('button', { name: 'Close Dev Console' });
+      if (await devConsole.isVisible({ timeout: 1500 }).catch(() => false)) {
+        await devConsole.click();
+        await this.page.waitForTimeout(500);
+      } else {
+        // Try the "hide" buttons near dev console
+        const hideButtons = this.page.locator('button:has-text("hide")');
+        const count = await hideButtons.count();
+        for (let i = count - 1; i >= 0; i--) {
+          if (await hideButtons.nth(i).isVisible({ timeout: 500 }).catch(() => false)) {
+            await hideButtons.nth(i).click();
+            break;
+          }
+        }
       }
     });
   }
@@ -89,11 +112,35 @@ export class ImageManagerPage extends BasePage {
   /**
    * Navigate to the Image Manager section via the Shopify Admin nav link.
    * Assumes the app is already open (goToApp was called externally).
+   * 
+   * Note: The nav link text may be "Image optimizer" or "Image manager" depending
+   * on the app version / locale. We try both.
    */
   async goTo(): Promise<void> {
     return this.step('ImageManager: navigate to Image Manager', async () => {
-      await this.closeShopifySidekick();
-      await this.page.getByRole('link', { name: 'Image manager' }).click();
+      await this.closeShopifyOverlays();
+
+      // Wait for nav links to be interactive (may be [disabled] right after load)
+      await this.page.waitForTimeout(1000);
+
+      // Try multiple possible nav link names
+      const navLink = this.page.getByRole('link', { name: /image (manager|optimizer)/i }).first();
+      await navLink.waitFor({ state: 'visible', timeout: 15000 });
+
+      // Shopify nav links can be temporarily disabled during app load
+      // Wait for the link to become clickable
+      await this.page.waitForFunction(
+        (selector) => {
+          const link = document.querySelector(selector);
+          return link && !link.hasAttribute('disabled') && !link.getAttribute('aria-disabled');
+        },
+        'a[href*="image-manager"], a[href*="image-optimizer"]',
+        { timeout: 15000 }
+      ).catch(() => {
+        // Fallback: click anyway even if disabled attribute persists
+      });
+
+      await navLink.click();
       await this.waitForLoad();
     });
   }
@@ -205,8 +252,8 @@ export class ImageManagerPage extends BasePage {
    */
   async goToCompression(): Promise<void> {
     return this.step('ImageManager: navigate to compression page', async () => {
-      await this.closeShopifySidekick();
-      await this.page.getByRole('link', { name: 'Image manager' }).click();
+      await this.closeShopifyOverlays();
+      await this.page.getByRole('link', { name: /image (manager|optimizer)/i }).first().click();
       await this.frame.getByRole('link', { name: /compression/i }).click();
       await this.waitForSkeletonGone();
     });
@@ -271,12 +318,17 @@ export class ImageManagerPage extends BasePage {
    */
   async navigateAway(): Promise<void> {
     return this.step('ImageManager: navigate away to trigger leave prompt', async () => {
-      const navLink = this.page.getByRole('link', { name: /speed up/i });
-      if (await navLink.isVisible({ timeout: 3000 }).catch(() => false)) {
-        await navLink.click();
+      // Try Shopify Admin nav links (always present)
+      const homeLink = this.page.getByRole('link', { name: 'Home' });
+      const settingsLink = this.page.getByRole('link', { name: 'Settings' });
+
+      if (await homeLink.isVisible({ timeout: 3000 }).catch(() => false)) {
+        await homeLink.click();
+      } else if (await settingsLink.isVisible({ timeout: 2000 }).catch(() => false)) {
+        await settingsLink.click();
       } else {
-        // Fallback: click any other nav link
-        await this.page.getByRole('link', { name: /dashboard/i }).click();
+        // Last resort: navigate via URL
+        await this.page.goto(`https://admin.shopify.com/store/${process.env.STORE_HANDLE || 'dophuc-store'}`);
       }
     });
   }
