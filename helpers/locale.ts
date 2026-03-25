@@ -115,6 +115,18 @@ export function tRegex(key: string): RegExp {
   return new RegExp(Array.from(texts).join('|'), 'i');
 }
 
+/**
+ * Return a Playwright-compatible `text=/regex/i` locator string.
+ * Use this directly in `frame.locator(tLoc('key'))`.
+ *
+ * @example
+ *   frame.locator(tLoc('ButtonOptimize.labelOtm')).click()
+ *   // → frame.locator('text=/Jetzt optimieren|Optimize now/i')
+ */
+export function tLoc(key: string): string {
+  return `text=/${tRegex(key).source}/i`;
+}
+
 /** Get current locale code */
 export function getLocale(): string {
   return currentLocale;

@@ -44,18 +44,26 @@ fixtures/index.ts                  ← available fixtures
 The app supports multiple languages. All user-visible text must use the locale helper:
 
 ```typescript
-import { t, tRegex } from '../../helpers/locale';
+import { t, tRegex, tLoc } from '../../helpers/locale';
 
 // ❌ WRONG — hardcoded English, will fail on German/French stores
 await frame.getByText('Optimize now').click();
 await expect(toast).toContainText('Optimization started');
 
-// ✅ CORRECT — resolves to the correct language at runtime
-await frame.getByText(t('ButtonOptimize.labelOtm')).click();
-await expect(toast).toContainText(t('Optimizer.Toast.started'));
+// ✅ CORRECT — tLoc() returns a Playwright regex locator string
+await frame.locator(tLoc('ButtonOptimize.labelOtm')).click();
+// tLoc('ButtonOptimize.labelOtm') → 'text=/Jetzt optimieren|Optimize now/i'
 
-// ✅ ALSO CORRECT — regex matching both EN and current locale
-await frame.locator(`text=${tRegex('ButtonOptimize.labelOtm').source}`).click();
+// ✅ ALSO CORRECT — t() resolves to single-language text
+await expect(toast).toContainText(t('Optimizer.SuccessBanner.Title'));
+
+// ✅ For combining multiple keys into one regex locator:
+const r1 = tRegex('Key1');
+const r2 = tRegex('Key2');
+await frame.locator(`text=/${r1.source}|${r2.source}/i`).click();
+
+// ⚠️ NEVER do this — Playwright text= without slashes is NOT regex:
+// await frame.locator(`text=${tRegex('key').source}`)  ← BROKEN
 ```
 
 **Key locale mappings (from app origin.json):**

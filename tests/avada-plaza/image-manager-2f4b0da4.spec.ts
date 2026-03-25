@@ -14,7 +14,7 @@
  */
 
 import { test, expect } from '../../fixtures';
-import { t, tRegex } from '../../helpers/locale';
+import { t, tRegex, tLoc } from '../../helpers/locale';
 
 test.describe('Image Manager — Optimize v2 Regression', () => {
   test('Optimize all — no confirmation modal (v2 regression) @smoke', async ({ imageManager }) => {
@@ -53,7 +53,7 @@ test.describe('Image Manager — Optimize v2 Regression', () => {
     await test.step('Click Optimize unoptimized', async () => {
       // Locale-aware: "Optimize unoptimized" / "Nicht optimierte optimieren"
       const btn = imageManager.frame.locator(
-        `text=${tRegex('ButtonOptimize.optionUnoptimized').source}`
+        tLoc('ButtonOptimize.optionUnoptimized')
       ).first();
       await btn.click();
       console.log('✅ Clicked Optimize unoptimized');
@@ -87,8 +87,7 @@ test.describe('Image Manager — Optimize v2 Regression', () => {
       // Locale-aware: "Optimizing images" / "Bilder optimieren"
       const optimizingRegex = tRegex('Optimizer.Optimizing');
       const progressRegex = tRegex('Optimizer.OptimizeProcess');
-      const combined = new RegExp(`${optimizingRegex.source}|${progressRegex.source}`, 'i');
-      const label = imageManager.frame.locator(`text=${combined.source}`).first();
+      const label = imageManager.frame.locator(`text=/${optimizingRegex.source}|${progressRegex.source}/i`).first();
       const visible = await label.isVisible({ timeout: 10000 }).catch(() => false);
       if (visible) {
         console.log('✅ Progress label visible');
@@ -115,11 +114,10 @@ test.describe('Image Manager — Optimize v2 Regression', () => {
       // Locale-aware: "Compress image" / "Bild komprimieren" / "Revert" / "Rückgängig"
       const compressRegex = tRegex('ManualCompression.Compress');
       const revertRegex = tRegex('ManualCompression.Revert');
-      const combined = new RegExp(`${compressRegex.source}|${revertRegex.source}`, 'i');
       const actionButton = imageManager.frame
         .locator('tr, [class*="Row"]')
         .first()
-        .locator(`text=${combined.source}`);
+        .locator(`text=/${compressRegex.source}|${revertRegex.source}/i`);
       const visible = await actionButton.isVisible({ timeout: 10000 }).catch(() => false);
       if (visible) {
         console.log('✅ Per-row action button found');

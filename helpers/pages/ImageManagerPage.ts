@@ -1,6 +1,6 @@
 import { Page, FrameLocator, Locator } from '@playwright/test';
 import { BasePage } from './BasePage';
-import { t, tRegex } from '../locale';
+import { t, tRegex, tLoc } from '../locale';
 
 /**
  * Page Object for the Avada Plaza Image Manager page.
@@ -54,27 +54,26 @@ export class ImageManagerPage extends BasePage {
 
   /** The "Optimize now" main CTA button */
   get optimizeNowButton(): Locator {
-    return this.frame.locator(`text=${tRegex('ButtonOptimize.labelOtm').source}`).first();
+    return this.frame.locator(tLoc('ButtonOptimize.labelOtm')).first();
   }
 
   /** The "Compress image" action button (manual mode) */
   get compressButton(): Locator {
-    return this.frame.locator(`text=${tRegex('ManualCompression.Compress').source}`).first();
+    return this.frame.locator(tLoc('ManualCompression.Compress')).first();
   }
 
   /** The "Optimize all" dropdown option */
   get optimizeAllButton(): Locator {
-    return this.frame.locator(`text=${tRegex('ButtonOptimize.optionAll').source}`).first();
+    return this.frame.locator(tLoc('ButtonOptimize.optionAll')).first();
   }
 
   /** The "Optimize manually" mode switcher */
   get manualOptimizeButton(): Locator {
-    return this.frame.locator(`text=${tRegex('Optimizer.OptimizeManually').source}`).first();
+    return this.frame.locator(tLoc('Optimizer.OptimizeManually')).first();
   }
 
   /** Empty state — no images to optimize */
   get emptyState(): Locator {
-    // Fallback to generic pattern since there's no specific i18n key
     return this.frame.locator('text=/no images|keine Bilder|aucune image/i').first();
   }
 
@@ -162,11 +161,10 @@ export class ImageManagerPage extends BasePage {
    */
   async waitForLoad(): Promise<void> {
     return this.step('ImageManager: wait for content to load', async () => {
-      // Wait for page title (in any locale) or optimize button
-      const title = tRegex('ImageManager.title');   // "Compression" / "Kompression"
-      const btn = tRegex('ButtonOptimize.labelOtm'); // "Optimize now" / "Jetzt optimieren"
-      const combined = new RegExp(`${title.source}|${btn.source}`, 'i');
-      await this.frame.locator(`text=${combined.source}`).first()
+      // Wait for page title or optimize button (any locale)
+      const title = tRegex('ImageManager.title');
+      const btn = tRegex('ButtonOptimize.labelOtm');
+      await this.frame.locator(`text=/${title.source}|${btn.source}/i`).first()
         .waitFor({ state: 'visible', timeout: 20000 });
     });
   }
