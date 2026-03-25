@@ -85,19 +85,16 @@ export class ImageManagerPage extends BasePage {
    */
   async closeShopifyOverlays(): Promise<void> {
     return this.step('ImageManager: close Shopify overlays (Sidekick, DevConsole)', async () => {
-      // 1. Close Sidekick dialog
+      // 1. Close Sidekick dialog (covers the iframe, making all elements "hidden")
       const sidekickDialog = this.page.locator('dialog:has-text("Sidekick")');
       if (await sidekickDialog.isVisible({ timeout: 2000 }).catch(() => false)) {
-        // Try the close/hide buttons within or near the sidekick
-        const closeBtn = this.page.getByRole('button', { name: /close sidekick/i });
-        const hideBtn = this.page.locator('dialog:has-text("Sidekick") button:has-text("hide")');
-        if (await closeBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
-          await closeBtn.click();
-        } else if (await hideBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
-          await hideBtn.click();
-        }
-        // Wait for sidekick to disappear
-        await sidekickDialog.waitFor({ state: 'hidden', timeout: 3000 }).catch(() => {});
+        // Press Escape to dismiss — most reliable for Shopify dialogs
+        await this.page.keyboard.press('Escape');
+        await sidekickDialog.waitFor({ state: 'hidden', timeout: 3000 }).catch(async () => {
+          // Fallback: click outside dialog to dismiss
+          await this.page.mouse.click(10, 10);
+          await sidekickDialog.waitFor({ state: 'hidden', timeout: 2000 }).catch(() => {});
+        });
       }
 
       // 2. Close Dev Console (can cause nav links to be [disabled])
