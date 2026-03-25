@@ -44,7 +44,8 @@ fixtures/index.ts                  ← available fixtures
 
 ### File structure
 - POM: `helpers/pages/[PageName]Page.ts` extending `BasePage`
-- Spec: `tests/[app-folder]/[feature].spec.ts`
+- Spec: **use the EXACT file path specified in "IMPORTANT: File Naming & Metadata"** section
+- The spec file **MUST start with the metadata header** provided in the prompt
 - Import test/expect from `../../fixtures` (not `@playwright/test`)
 
 ### Validation
