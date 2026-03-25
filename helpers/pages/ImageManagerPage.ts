@@ -252,6 +252,20 @@ export class ImageManagerPage extends BasePage {
   }
 
   /**
+   * Click an already-optimized image row to open the compare view.
+   */
+  async clickOptimizedImageRow(): Promise<void> {
+    return this.step('ImageManager: click optimized image row', async () => {
+      const optimizedRow = this.frame
+        .locator('tr, [class*="Row"]')
+        .filter({ has: this.frame.getByText(/optimized/i) })
+        .first();
+      await optimizedRow.waitFor({ state: 'visible', timeout: 15000 });
+      await optimizedRow.click();
+    });
+  }
+
+  /**
    * Navigate away from Image Manager to trigger leave prompt.
    * Clicks the "Speed up" nav link (or first available nav link).
    */
