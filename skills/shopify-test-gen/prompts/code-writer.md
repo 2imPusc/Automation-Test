@@ -23,11 +23,34 @@ helpers/shopify.ts                 ← goToApp(), ADMIN_BASE
 fixtures/index.ts                  ← available fixtures
 ```
 
+## ⚠️ Polaris ↔ Playwright Reference (MANDATORY)
+
+**Before writing ANY selector**, consult:
+```
+skills/shopify-test-gen/references/polaris-playwright-map.md
+```
+
+This file contains:
+- Verified selectors for Avada custom components (ButtonOptimize, OptimizeButton split button...)
+- Polaris standard component patterns (TextField, Select, Tabs, Modal, Toast, IndexTable...)
+- Shopify Admin overlays (Dev Console, Sidekick, Contextual Save Bar)
+- Common pitfalls and fragile→stable selector rewrites
+
+**Key rules from the map (apply always):**
+
+1. **OptimizeButton split button dropdown** → click `.Avada-Optimize-Button-suffix-wrapper`, NOT the text label
+2. **Polaris Toast** → target `.Polaris-Frame-ToastManager [role="alert"]`, NOT the ToastManager wrapper
+3. **Polaris Tabs** → use `getByRole('tab', { name: ... })`, NOT `getByText()` (renders hidden spans)
+4. **Polaris IndexTable checkboxes** → `locator('input[type="checkbox"]').nth(1)` + `.click({ force: true })`
+5. **Shopify Modal** → always exclude Sidekick: `[role="dialog"]:not(#sidekick)`
+6. **Polaris ActionList items** → render as `role="button"`, use `getByRole('button', { name: /text/i })`
+
 ## Rules
 
 ### Selectors (priority order)
 1. `getByTestId('...')` — if data-testid in feature context
-2. `getByRole('button/link/...', { name: '...' })` — exact label from feature context
+2. Verified selector from `polaris-playwright-map.md` — if component is listed there
+3. `getByRole('button/link/...', { name: '...' })` — exact label from feature context
 3. `getByText('...')` — exact text from feature context
 4. `getByLabel('...')` — for form inputs
 5. CSS selector — last resort only

@@ -66,9 +66,14 @@ export class ImageManagerPage extends BasePage {
     return this.frame.locator(tLoc('ManualCompression.Compress')).first();
   }
 
-  /** The "Optimize all" dropdown option */
+  /**
+   * "Optimize all" dropdown option.
+   * Polaris ActionList item → renders as role="button".
+   * Text hardcoded in source (not i18n) — use regex.
+   * Ref: polaris-playwright-map.md → OptimizeButton
+   */
   get optimizeAllButton(): Locator {
-    return this.frame.locator(tLoc('ButtonOptimize.optionAll')).first();
+    return this.frame.getByRole('button', { name: /^Optimize all$/i }).first();
   }
 
   /** The "Optimize manually" mode switcher */
@@ -76,9 +81,13 @@ export class ImageManagerPage extends BasePage {
     return this.frame.locator(tLoc('Optimizer.OptimizeManually')).first();
   }
 
-  /** The "Optimize unoptimized" dropdown option */
+  /**
+   * "Optimize unoptimized" dropdown option.
+   * Polaris ActionList item → renders as role="button".
+   * Text hardcoded in source (not i18n) — use regex.
+   */
   get optimizeUnoptimizedButton(): Locator {
-    return this.frame.locator(tLoc('ButtonOptimize.optionUnoptimized')).first();
+    return this.frame.getByRole('button', { name: /^Optimize unoptimized$/i }).first();
   }
 
   /** Empty state — no images to optimize */
@@ -167,13 +176,8 @@ export class ImageManagerPage extends BasePage {
   }
 
   /**
-   * Open the "Optimize now" dropdown by clicking the arrow img trigger.
-   * UI structure:
-   *   generic[cursor=pointer]
-   *     ├── text: "Optimize now"   ← direct optimize (no dropdown)
-   *     └── img                    ← dropdown arrow trigger
-   *
-   * Clicking the img opens the dropdown with "Optimize all" / "Optimize unoptimized".
+   * Click the "Optimize now" button directly (no dropdown).
+   * For dropdown flow, use openOptimizeDropdown() instead.
    */
   async clickOptimizeNow(): Promise<void> {
     return this.step('ImageManager: click Optimize now', async () => {
@@ -183,20 +187,21 @@ export class ImageManagerPage extends BasePage {
   }
 
   /**
-   * Open the dropdown by clicking the arrow (img) next to "Optimize now" text.
-   * Use this before clickOptimizeAll() / clickOptimizeUnoptimized().
+   * Open the OptimizeButton split dropdown.
+   *
+   * Source: pages/ImageManager/Optimizer/OptimizeButton/index.js
+   * DOM: div.Avada-Optimize-Button → click toggles Polaris Popover
+   *      div.Avada-Optimize-Button-suffix-wrapper → dropdown arrow (CONFIRMED via Codegen)
+   *
+   * Ref: skills/shopify-test-gen/references/polaris-playwright-map.md
    */
   async openOptimizeDropdown(): Promise<void> {
     return this.step('ImageManager: open Optimize dropdown', async () => {
-      // The dropdown arrow is the img sibling of "Optimize now" text
-      const dropdownArrow = this.frame
-        .locator(tLoc('ButtonOptimize.labelOtm'))
-        .locator('..')           // parent generic wrapper
-        .locator('img')
-        .first();
-      await dropdownArrow.waitFor({ state: 'visible', timeout: 10000 });
-      await dropdownArrow.click();
-      // Wait for dropdown options to render
+      // Use suffix-wrapper — confirmed stable selector from Playwright Codegen recording
+      const suffixWrapper = this.frame.locator('.Avada-Optimize-Button-suffix-wrapper').first();
+      await suffixWrapper.waitFor({ state: 'visible', timeout: 10000 });
+      await suffixWrapper.click();
+      // Wait for Polaris Popover/ActionList to render
       await this.page.waitForTimeout(400);
     });
   }

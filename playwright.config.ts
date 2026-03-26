@@ -35,6 +35,8 @@ const AUTH_FILE = (ENV !== 'local' && fs.existsSync(sessionEnvFile)) ? sessionEn
 
 export default defineConfig({
   testDir: './tests',
+  // Also include recorded features from Web UI
+  // testMatch: ['tests/**/*.spec.ts', 'recorded-features/**/*.spec.ts'],
   fullyParallel: false, // Sequential để tránh bị Shopify rate limit
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
