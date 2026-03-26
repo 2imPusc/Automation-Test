@@ -163,28 +163,38 @@ export class ImageManagerPage extends BasePage {
   }
 
   /**
-   * Click the "Optimize now" / "Jetzt optimieren" button.
+   * Click the "Optimize now" split button (main label, not the dropdown arrow).
+   * UI: generic[cursor=pointer] containing text "Optimize now" + img arrow
+   * → click the text part only to avoid accidentally opening the dropdown.
    */
   async clickOptimizeNow(): Promise<void> {
     return this.step('ImageManager: click Optimize now', async () => {
       await this.optimizeNowButton.click();
+      // Wait for dropdown to render before any subsequent action
+      await this.page.waitForTimeout(500);
     });
   }
 
   /**
-   * Click the "Optimize all" button to start auto optimization.
+   * Click the "Optimize all" dropdown option.
+   * Must call clickOptimizeNow() first to open the dropdown.
    */
   async clickOptimizeAll(): Promise<void> {
     return this.step('ImageManager: click Optimize all', async () => {
+      // Wait for dropdown option to be visible after opening
+      await this.optimizeAllButton.waitFor({ state: 'visible', timeout: 5000 });
       await this.optimizeAllButton.click();
     });
   }
 
   /**
    * Click the "Optimize unoptimized" dropdown option.
+   * Must call clickOptimizeNow() first to open the dropdown.
    */
   async clickOptimizeUnoptimized(): Promise<void> {
     return this.step('ImageManager: click Optimize unoptimized', async () => {
+      // Wait for dropdown option to be visible after opening
+      await this.optimizeUnoptimizedButton.waitFor({ state: 'visible', timeout: 5000 });
       await this.optimizeUnoptimizedButton.click();
     });
   }
