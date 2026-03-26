@@ -6,6 +6,7 @@
 import { Page, FrameLocator, Locator } from '@playwright/test';
 import { test } from '@playwright/test';
 import { BasePage } from './BasePage';
+import { t, tRegex, tLoc } from '../locale';   // ← ALWAYS import locale helpers
 
 /**
  * Page Object for [Page Name] of [App Name].
@@ -16,11 +17,16 @@ export class [PageName]Page extends BasePage {
   }
 
   // ── Locators ──────────────────────────────────────────────────────────────
+  // ⚠️ RULE: NEVER hardcode UI text. Always use tLoc()/tRegex()/t() so locators
+  //          work in any language (en, de, fr, vi, ...).
 
+  /** Primary CTA button — resolved from i18n key */
   get primaryButton(): Locator {
-    return this.frame.getByRole('button', { name: 'Button Name' });
+    // Use tLoc() for text-based locators → returns 'text=/EN text|Locale text/i'
+    return this.frame.locator(tLoc('[i18n.key.for.button.label]')).first();
   }
 
+  /** Success toast / alert */
   get successToast(): Locator {
     return this.frame.locator('[role="alert"], [class*="toast" i]').first();
   }
@@ -35,7 +41,10 @@ export class [PageName]Page extends BasePage {
   }
 
   async waitForLoad(): Promise<void> {
-    await this.frame.getByText('Unique Heading').waitFor({ state: 'visible', timeout: 20000 });
+    // Use tRegex() for getByRole name matching across locales
+    await this.frame
+      .getByRole('heading', { name: tRegex('[i18n.key.for.page.title]') })
+      .waitFor({ state: 'visible', timeout: 20000 });
   }
 
   async clickPrimary(): Promise<void> {
@@ -54,31 +63,59 @@ export class [PageName]Page extends BasePage {
  *
  * [Brief description of what is tested]
  */
-import { test, expect } from '@playwright/test';
-// If using imageManager fixture instead:
-// import { test, expect } from '../../fixtures';
-import { goToApp } from '../../helpers/shopify';
-import { APPS } from '../../helpers/apps';
-import { [PageName]Page } from '../../helpers/pages/[PageName]Page';
+import { test, expect } from '../../fixtures';
+// ⚠️ Import locale helpers — REQUIRED for any text assertion
+import { t, tLoc } from '../../helpers/locale';
 
 test.describe('[App] - [Feature]', () => {
-  test('[description] @smoke', async ({ page }) => {
-    const frame = await goToApp(page, APPS.[appKey].handle);
-    const featurePage = new [PageName]Page(page, frame);
-    await featurePage.goTo();
+  test('[description] @smoke', async ({ imageManager }) => {
+    await imageManager.waitForLoad();
 
-    await expect(featurePage.primaryButton).toBeVisible();
+    // ✅ CORRECT — use tLoc() for locator, t() for text assertions
+    await expect(imageManager.frame.locator(tLoc('[i18n.button.key]'))).toBeVisible();
     console.log('✅ [pass condition]');
   });
 
-  test('[second test case]', async ({ page }) => {
-    const frame = await goToApp(page, APPS.[appKey].handle);
-    const featurePage = new [PageName]Page(page, frame);
-    await featurePage.goTo();
+  test('[second test case]', async ({ imageManager }) => {
+    await imageManager.waitForLoad();
 
-    await featurePage.clickPrimary();
-    await expect(featurePage.successToast).toBeVisible({ timeout: 10000 });
+    // ✅ CORRECT — use Page Object methods (which already use tLoc internally)
+    await imageManager.clickOptimizeNow();
+
+    // ✅ CORRECT — t() resolves to current locale text
+    await expect(imageManager.toast).toBeVisible({ timeout: 10000 });
     console.log('✅ Toast appeared after action');
   });
+
+  test('[stats/labels assertion]', async ({ imageManager }) => {
+    await imageManager.waitForLoad();
+
+    // ✅ CORRECT — use t() for label text
+    await expect(
+      imageManager.frame.getByText(t('[i18n.label.key]'), { exact: false })
+    ).toBeVisible({ timeout: 10000 });
+  });
 });
+```
+
+## Quick reference — i18n usage
+
+| Cần làm | Dùng hàm | Ví dụ |
+|---|---|---|
+| Locator theo text | `tLoc(key)` | `frame.locator(tLoc('ButtonOptimize.labelOtm'))` |
+| Locator getByRole | `tRegex(key)` | `frame.getByRole('button', { name: tRegex('ButtonOptimize.labelOtm') })` |
+| Assert text content | `t(key)` | `expect(el).toContainText(t('Optimizer.SuccessBanner.Title'))` |
+| getByText assertion | `t(key)` | `frame.getByText(t('Report.Tooltip.TotalImage'))` |
+
+**⚠️ NEVER use bare string literals for UI text:**
+```typescript
+// ❌ WRONG — hardcoded, breaks on non-English stores
+frame.getByText('Optimize now')
+frame.getByText('Total images')
+expect(toast).toContainText('Optimize successfully')
+
+// ✅ CORRECT
+frame.locator(tLoc('ButtonOptimize.labelOtm'))
+frame.getByText(t('Report.Tooltip.TotalImage'))
+expect(toast).toContainText(t('Optimizer.SuccessBanner.Title'))
 ```

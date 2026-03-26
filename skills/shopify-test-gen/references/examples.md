@@ -14,14 +14,18 @@ Flow: mở trang Settings, kiểm tra fields hiển thị, lưu, kiểm tra toas
 import { Page, FrameLocator, Locator } from '@playwright/test';
 import { test } from '@playwright/test';
 import { BasePage } from './BasePage';
+import { t, tRegex, tLoc } from '../locale';  // ← REQUIRED
 
 export class SettingsPage extends BasePage {
   constructor(page: Page, frame: FrameLocator) {
     super(page, frame);
   }
 
+  // ✅ Use tLoc() for text-based locators — works in any locale
   get saveButton(): Locator {
-    return this.frame.getByRole('button', { name: 'Save' });
+    return this.frame.locator(tLoc('UseModal.toast.save')).first()
+      // Fallback to role-based if i18n key not available
+      ?? this.frame.getByRole('button', { name: tRegex('UseModal.toast.save') });
   }
 
   get successToast(): Locator {
@@ -29,7 +33,6 @@ export class SettingsPage extends BasePage {
   }
 
   get compressionQualityInput(): Locator {
-    // TODO: verify selector
     return this.frame.locator('input[type="range"], input[name*="quality" i]').first();
   }
 
@@ -57,30 +60,41 @@ export class SettingsPage extends BasePage {
 /**
  * Avada Plaza - Settings Tests
  */
-import { test, expect } from '@playwright/test';
-import { goToApp } from '../../helpers/shopify';
-import { APPS } from '../../helpers/apps';
-import { SettingsPage } from '../../helpers/pages/SettingsPage';
+import { test, expect } from '../../fixtures';
+import { t, tLoc } from '../../helpers/locale';  // ← REQUIRED — no bare strings allowed
 
 test.describe('Avada Plaza - Settings', () => {
-  test('Settings page loads correctly @smoke', async ({ page }) => {
-    const frame = await goToApp(page, APPS.avadaPlaza.handle);
-    const settings = new SettingsPage(page, frame);
-    await settings.goTo();
+  test('Settings page loads correctly @smoke', async ({ imageManager }) => {
+    await imageManager.waitForLoad();
 
-    await expect(settings.saveButton).toBeVisible();
-    await expect(settings.compressionQualityInput).toBeVisible();
+    // ✅ CORRECT — use Page Object locator (already uses tLoc internally)
+    await expect(imageManager.frame.locator(tLoc('UseModal.toast.save'))).toBeVisible();
     console.log('✅ Settings page loaded');
   });
 
-  test('Save settings → success toast appears', async ({ page }) => {
-    const frame = await goToApp(page, APPS.avadaPlaza.handle);
-    const settings = new SettingsPage(page, frame);
-    await settings.goTo();
+  test('Save settings → success toast appears', async ({ imageManager }) => {
+    await imageManager.waitForLoad();
 
-    await settings.clickSave();
-    await expect(settings.successToast).toBeVisible({ timeout: 10000 });
+    // ✅ CORRECT — Page Object action method
+    await imageManager.clickOptimizeNow();
+
+    // ✅ CORRECT — t() resolves to locale-specific text
+    await expect(imageManager.toast).toBeVisible({ timeout: 10000 });
+    await expect(imageManager.toast).toContainText(t('UseModal.toast.save'));
     console.log('✅ Success toast appeared');
+  });
+
+  test('Statistics labels display correctly', async ({ imageManager }) => {
+    await imageManager.waitForLoad();
+
+    // ✅ CORRECT — t() for getByText, not bare strings
+    await expect(
+      imageManager.frame.getByText(t('Report.Tooltip.TotalImage'), { exact: false })
+    ).toBeVisible({ timeout: 10000 });
+    await expect(
+      imageManager.frame.getByText(t('Report.Tooltip.OriginalSize'), { exact: false })
+    ).toBeVisible({ timeout: 10000 });
+    console.log('✅ Statistics labels visible in current locale');
   });
 });
 ```
