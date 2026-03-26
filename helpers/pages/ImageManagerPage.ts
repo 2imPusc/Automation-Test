@@ -18,12 +18,16 @@ export class ImageManagerPage extends BasePage {
 
   // ── Locators ──────────────────────────────────────────────────────────────
 
-  /** Toast / alert notification element */
+  /** Toast / alert notification element.
+   * Polaris renders: <div class="Polaris-Frame-ToastManager"><div role="alert">...</div></div>
+   * The ToastManager wrapper is always in DOM (hidden when empty).
+   * Must target the inner [role="alert"] child, not the wrapper itself.
+   */
   get toast(): Locator {
     return this.frame.locator([
-      '[role="alert"]',
-      '[class*="toast" i]',
-      '[class*="Toast" i]',
+      '.Polaris-Frame-ToastManager [role="alert"]',
+      '[role="alert"][class*="Toast" i]',
+      '[class*="toast" i]:not([aria-live])',  // skip empty ToastManager wrapper
       '[class*="notification" i]',
       '[class*="snackbar" i]',
     ].join(', ')).first();
@@ -163,25 +167,46 @@ export class ImageManagerPage extends BasePage {
   }
 
   /**
-   * Click the "Optimize now" split button (main label, not the dropdown arrow).
-   * UI: generic[cursor=pointer] containing text "Optimize now" + img arrow
-   * → click the text part only to avoid accidentally opening the dropdown.
+   * Open the "Optimize now" dropdown by clicking the arrow img trigger.
+   * UI structure:
+   *   generic[cursor=pointer]
+   *     ├── text: "Optimize now"   ← direct optimize (no dropdown)
+   *     └── img                    ← dropdown arrow trigger
+   *
+   * Clicking the img opens the dropdown with "Optimize all" / "Optimize unoptimized".
    */
   async clickOptimizeNow(): Promise<void> {
     return this.step('ImageManager: click Optimize now', async () => {
       await this.optimizeNowButton.click();
-      // Wait for dropdown to render before any subsequent action
-      await this.page.waitForTimeout(500);
+      await this.page.waitForTimeout(300);
+    });
+  }
+
+  /**
+   * Open the dropdown by clicking the arrow (img) next to "Optimize now" text.
+   * Use this before clickOptimizeAll() / clickOptimizeUnoptimized().
+   */
+  async openOptimizeDropdown(): Promise<void> {
+    return this.step('ImageManager: open Optimize dropdown', async () => {
+      // The dropdown arrow is the img sibling of "Optimize now" text
+      const dropdownArrow = this.frame
+        .locator(tLoc('ButtonOptimize.labelOtm'))
+        .locator('..')           // parent generic wrapper
+        .locator('img')
+        .first();
+      await dropdownArrow.waitFor({ state: 'visible', timeout: 10000 });
+      await dropdownArrow.click();
+      // Wait for dropdown options to render
+      await this.page.waitForTimeout(400);
     });
   }
 
   /**
    * Click the "Optimize all" dropdown option.
-   * Must call clickOptimizeNow() first to open the dropdown.
+   * Call openOptimizeDropdown() first.
    */
   async clickOptimizeAll(): Promise<void> {
     return this.step('ImageManager: click Optimize all', async () => {
-      // Wait for dropdown option to be visible after opening
       await this.optimizeAllButton.waitFor({ state: 'visible', timeout: 5000 });
       await this.optimizeAllButton.click();
     });
@@ -189,11 +214,10 @@ export class ImageManagerPage extends BasePage {
 
   /**
    * Click the "Optimize unoptimized" dropdown option.
-   * Must call clickOptimizeNow() first to open the dropdown.
+   * Call openOptimizeDropdown() first.
    */
   async clickOptimizeUnoptimized(): Promise<void> {
     return this.step('ImageManager: click Optimize unoptimized', async () => {
-      // Wait for dropdown option to be visible after opening
       await this.optimizeUnoptimizedButton.waitFor({ state: 'visible', timeout: 5000 });
       await this.optimizeUnoptimizedButton.click();
     });
@@ -306,12 +330,22 @@ export class ImageManagerPage extends BasePage {
   }
 
   /**
-   * Trigger "Optimize all" flow: click Optimize now → Optimize all.
+   * Trigger "Optimize all" flow: open dropdown → click Optimize all.
    */
   async triggerOptimizeAll(): Promise<void> {
     return this.step('ImageManager: trigger Optimize all', async () => {
-      await this.clickOptimizeNow();
+      await this.openOptimizeDropdown();
       await this.clickOptimizeAll();
+    });
+  }
+
+  /**
+   * Trigger "Optimize unoptimized" flow: open dropdown → click Optimize unoptimized.
+   */
+  async triggerOptimizeUnoptimized(): Promise<void> {
+    return this.step('ImageManager: trigger Optimize unoptimized', async () => {
+      await this.openOptimizeDropdown();
+      await this.clickOptimizeUnoptimized();
     });
   }
 
