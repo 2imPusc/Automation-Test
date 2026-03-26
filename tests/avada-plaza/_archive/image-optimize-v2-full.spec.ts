@@ -11,6 +11,7 @@
  * Run:  npx playwright test tests/avada-plaza/image-optimize-v2-full.spec.ts --headed
  */
 import { test, expect } from '../../fixtures';
+import { t, tLoc } from '../../helpers/locale';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TC01 — Image Manager loads with Optimize button visible
@@ -30,7 +31,7 @@ test(
     });
 
     await test.step('Assert Optimize now button is present and enabled', async () => {
-      const optimizeBtn = imageManager.frame.getByText('Optimize now');
+      const optimizeBtn = imageManager.optimizeNowButton;
       await expect(optimizeBtn).toBeVisible();
       await expect(optimizeBtn).toBeEnabled();
       console.log('✅ Optimize now button is visible and enabled');
@@ -45,7 +46,7 @@ test(
   'Optimize all — no confirmation modal appears (v2 regression) @regression',
   async ({ imageManager }) => {
     await test.step('Wait for image table to load', async () => {
-      await expect(imageManager.frame.getByText('Optimize now')).toBeVisible({ timeout: 20000 });
+      await expect(imageManager.optimizeNowButton).toBeVisible({ timeout: 20000 });
       console.log('✅ Image table loaded');
     });
 
@@ -79,7 +80,7 @@ test(
   'Toast notification appears after triggering optimization @regression',
   async ({ imageManager }) => {
     await test.step('Wait for image table to load', async () => {
-      await expect(imageManager.frame.getByText('Optimize now')).toBeVisible({ timeout: 20000 });
+      await expect(imageManager.optimizeNowButton).toBeVisible({ timeout: 20000 });
       console.log('✅ Image table loaded');
     });
 
@@ -111,7 +112,7 @@ test(
   'Image compare table renders correctly after v2 changes @regression',
   async ({ imageManager }) => {
     await test.step('Wait for image list to load', async () => {
-      await expect(imageManager.frame.getByText('Optimize now')).toBeVisible({ timeout: 20000 });
+      await expect(imageManager.optimizeNowButton).toBeVisible({ timeout: 20000 });
       console.log('✅ Image list loaded');
     });
 
@@ -122,10 +123,10 @@ test(
     });
 
     await test.step('Assert all expected stat columns are present', async () => {
-      await expect(imageManager.frame.getByText('Total images')).toBeVisible();
-      await expect(imageManager.frame.getByText('Original size')).toBeVisible();
-      await expect(imageManager.frame.getByText('Optimized size')).toBeVisible();
-      await expect(imageManager.frame.getByText('Size saved')).toBeVisible();
+      await expect(imageManager.frame.getByText(t('Report.Tooltip.TotalImage'))).toBeVisible();
+      await expect(imageManager.frame.getByText(t('Report.Tooltip.OriginalSize'))).toBeVisible();
+      await expect(imageManager.frame.getByText(t('Report.Tooltip.OptimizedSize'))).toBeVisible();
+      await expect(imageManager.frame.getByText(t('ManualCompression.IndexTableHistory.sizeSaved'))).toBeVisible();
       console.log('✅ All stat labels rendered — no missing columns');
     });
 
@@ -133,7 +134,7 @@ test(
       const cards = imageManager.frame.locator('[class*="Card"]');
       const cardCount = await cards.count();
       expect(cardCount).toBeGreaterThan(0);
-      await expect(imageManager.frame.getByText('Optimize now')).toBeVisible();
+      await expect(imageManager.optimizeNowButton).toBeVisible();
       console.log(`✅ ${cardCount} card section(s) rendered — layout intact`);
     });
   }
@@ -168,7 +169,7 @@ test(
       const stayButton = imageManager.frame.getByRole('button', { name: /stay/i })
         .or(imageManager.page.getByRole('button', { name: /stay/i }));
       await stayButton.first().click();
-      await expect(imageManager.frame.getByText('Optimize now')).toBeVisible({ timeout: 10000 });
+      await expect(imageManager.optimizeNowButton).toBeVisible({ timeout: 10000 });
       console.log('✅ Clicked Stay — still on Image Manager');
     });
 
@@ -177,7 +178,7 @@ test(
       const leaveButton = imageManager.frame.getByRole('button', { name: /leave/i })
         .or(imageManager.page.getByRole('button', { name: /leave/i }));
       await leaveButton.first().click();
-      await expect(imageManager.frame.getByText('Optimize now')).toBeHidden({ timeout: 10000 });
+      await expect(imageManager.optimizeNowButton).toBeHidden({ timeout: 10000 });
       console.log('✅ Clicked Leave — navigated away without errors');
     });
   }

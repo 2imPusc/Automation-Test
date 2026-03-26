@@ -10,6 +10,7 @@
  * Run:   npx playwright test tests/avada-plaza/image-optimize-v2.spec.ts --headed
  */
 import { test, expect } from '../../fixtures';
+import { t, tLoc } from '../../helpers/locale';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TC01 — No confirmation modal on "Optimize all" (v2 regression)
@@ -107,7 +108,7 @@ test.describe('Image Optimize v2 — Manual compress (single image)', () => {
 
       await test.step('Toast "Image optimized successfully" appears', async () => {
         await expect(
-          imageManager.frame.getByText('Image optimized successfully')
+          imageManager.frame.getByText(t('ManualCompression.DoneOptimize'))
         ).toBeVisible({ timeout: 60000 });
         console.log('✅ Success toast shown');
       });
@@ -123,15 +124,15 @@ test.describe('Image Optimize v2 — Stats panel sanity', () => {
     'Image Manager loads all statistics labels @smoke',
     async ({ imageManager }) => {
       await test.step('Assert stat labels are visible', async () => {
-        await expect(imageManager.frame.getByText('Total images')).toBeVisible();
-        await expect(imageManager.frame.getByText('Original size')).toBeVisible();
-        await expect(imageManager.frame.getByText('Optimized size')).toBeVisible();
-        await expect(imageManager.frame.getByText('Size saved')).toBeVisible();
+        await expect(imageManager.frame.getByText(t('Report.Tooltip.TotalImage'))).toBeVisible();
+        await expect(imageManager.frame.getByText(t('Report.Tooltip.OriginalSize'))).toBeVisible();
+        await expect(imageManager.frame.getByText(t('Report.Tooltip.OptimizedSize'))).toBeVisible();
+        await expect(imageManager.frame.getByText(t('ManualCompression.IndexTableHistory.sizeSaved'))).toBeVisible();
         console.log('✅ All statistics labels present');
       });
 
       await test.step('Assert Optimize now CTA is present', async () => {
-        await expect(imageManager.frame.getByText('Optimize now')).toBeVisible();
+        await expect(imageManager.frame.locator(tLoc('ButtonOptimize.labelOtm')).first()).toBeVisible();
         console.log('✅ Optimize now button visible');
       });
     }

@@ -72,9 +72,19 @@ export class ImageManagerPage extends BasePage {
     return this.frame.locator(tLoc('Optimizer.OptimizeManually')).first();
   }
 
+  /** The "Optimize unoptimized" dropdown option */
+  get optimizeUnoptimizedButton(): Locator {
+    return this.frame.locator(tLoc('ButtonOptimize.optionUnoptimized')).first();
+  }
+
   /** Empty state — no images to optimize */
   get emptyState(): Locator {
     return this.frame.locator('text=/no images|keine Bilder|aucune image/i').first();
+  }
+
+  /** Unsaved changes bar (Shopify contextual save bar) */
+  get unsavedChangesBar(): Locator {
+    return this.page.locator('text=/Unsaved changes/i');
   }
 
   // ── Actions ───────────────────────────────────────────────────────────────
@@ -167,6 +177,25 @@ export class ImageManagerPage extends BasePage {
   async clickOptimizeAll(): Promise<void> {
     return this.step('ImageManager: click Optimize all', async () => {
       await this.optimizeAllButton.click();
+    });
+  }
+
+  /**
+   * Click the "Optimize unoptimized" dropdown option.
+   */
+  async clickOptimizeUnoptimized(): Promise<void> {
+    return this.step('ImageManager: click Optimize unoptimized', async () => {
+      await this.optimizeUnoptimizedButton.click();
+    });
+  }
+
+  /**
+   * Trigger "Optimize unoptimized" flow: click Optimize now → Optimize unoptimized.
+   */
+  async triggerOptimizeUnoptimized(): Promise<void> {
+    return this.step('ImageManager: trigger Optimize unoptimized', async () => {
+      await this.clickOptimizeNow();
+      await this.clickOptimizeUnoptimized();
     });
   }
 
@@ -361,6 +390,29 @@ export class ImageManagerPage extends BasePage {
         // Last resort: navigate via URL
         await this.page.goto(`https://admin.shopify.com/store/${process.env.STORE_HANDLE || 'dophuc-store'}`);
       }
+    });
+  }
+
+  /**
+   * Click the "Discard" button on the Shopify contextual save bar.
+   */
+  async clickDiscard(): Promise<void> {
+    return this.step('ImageManager: click Discard on save bar', async () => {
+      const discardBtn = this.page.getByRole('button', { name: /discard/i });
+      await discardBtn.waitFor({ state: 'visible', timeout: 5000 });
+      await discardBtn.click();
+    });
+  }
+
+  /**
+   * Read the "Images optimized" statistic count from the report section.
+   * Returns the parsed number, or 0 if not found.
+   */
+  async getImagesOptimizedCount(): Promise<number> {
+    return this.step('ImageManager: read Images optimized count', async () => {
+      const statsText = await this.frame.getByText('Images optimized').locator('..').textContent() || '';
+      const match = statsText.match(/(\d[\d,]*)/);
+      return match ? parseInt(match[1].replace(/,/g, ''), 10) : 0;
     });
   }
 }

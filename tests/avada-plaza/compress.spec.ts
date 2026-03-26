@@ -8,12 +8,13 @@
  * Chạy `npm run test:headed` để debug visual.
  */
 import { test, expect } from '../../fixtures';
+import { t } from '../../helpers/locale';
 
 test.describe('Avada Plaza - Image Manager', () => {
   test('trang Image Manager hiển thị đúng thông tin @smoke', async ({ imageManager }) => {
-    await expect(imageManager.frame.getByText('Total images')).toBeVisible();
-    await expect(imageManager.frame.getByText('Original size')).toBeVisible();
-    await expect(imageManager.frame.getByText('Optimize now')).toBeVisible();
+    await expect(imageManager.frame.getByText(t('Report.Tooltip.TotalImage'))).toBeVisible();
+    await expect(imageManager.frame.getByText(t('Report.Tooltip.OriginalSize'))).toBeVisible();
+    await expect(imageManager.optimizeNowButton).toBeVisible();
 
     console.log('✅ Image Manager load đúng');
   });

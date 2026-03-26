@@ -10,6 +10,7 @@
  * Run:  npx playwright test tests/avada-plaza/image-optimize-v2-extended.spec.ts --headed
  */
 import { test, expect } from '../../fixtures';
+import { t, tLoc } from '../../helpers/locale';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TC01 — Optimize all — no confirmation modal (v2 regression)
@@ -110,7 +111,7 @@ test.describe('v2 Regression — Image compare table', () => {
 
       await test.step('Assert: at least one image row or empty-state message', async () => {
         const rows = imageManager.frame.locator('table tbody tr');
-        const emptyState = imageManager.frame.getByText(/no images/i);
+        const emptyState = imageManager.frame.locator(tLoc('ImageCompression.EmptyState.Title')).first();
 
         const hasRows = await rows.count() > 0;
         const hasEmptyState = await emptyState.isVisible().catch(() => false);

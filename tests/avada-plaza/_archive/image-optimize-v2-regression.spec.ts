@@ -9,6 +9,7 @@
  * Run:  npx playwright test tests/avada-plaza/image-optimize-v2-regression.spec.ts --headed
  */
 import { test, expect } from '../../fixtures';
+import { t, tLoc } from '../../helpers/locale';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TC01 — Optimize all — no confirmation modal (v2 regression) @smoke
@@ -96,7 +97,7 @@ test(
 
     await test.step('Assert image table/list is rendered', async () => {
       // Check stat labels that indicate images are loaded
-      await expect(imageManager.frame.getByText('Total images')).toBeVisible({ timeout: 10000 });
+      await expect(imageManager.frame.getByText(t('Report.Tooltip.TotalImage'))).toBeVisible({ timeout: 10000 });
       console.log('✅ Image stats section rendered');
     });
 
@@ -109,11 +110,16 @@ test(
     });
 
     await test.step('Assert stat labels are all present', async () => {
-      const expectedLabels = ['Total images', 'Original size', 'Optimized size', 'Size saved'];
+      const expectedLabels = [
+        t('Report.Tooltip.TotalImage'),
+        t('Report.Tooltip.OriginalSize'),
+        t('Report.Tooltip.OptimizedSize'),
+        t('ManualCompression.IndexTableHistory.sizeSaved'),
+      ];
       for (const label of expectedLabels) {
         await expect(imageManager.frame.getByText(label)).toBeVisible({ timeout: 5000 });
       }
-      console.log('✅ All stat labels present: Total images, Original size, Optimized size, Size saved');
+      console.log('✅ All stat labels present');
     });
   }
 );
@@ -141,7 +147,11 @@ test(
 
     await test.step('Assert image sizes or compression ratio data is displayed', async () => {
       // Stat labels from the Report component show compression data
-      const sizeLabels = ['Original size', 'Optimized size', 'Size saved'];
+      const sizeLabels = [
+        t('Report.Tooltip.OriginalSize'),
+        t('Report.Tooltip.OptimizedSize'),
+        t('ManualCompression.IndexTableHistory.sizeSaved'),
+      ];
       for (const label of sizeLabels) {
         const el = imageManager.frame.getByText(label);
         await expect(el).toBeVisible({ timeout: 5000 });
