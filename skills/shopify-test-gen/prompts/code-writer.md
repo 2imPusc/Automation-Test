@@ -8,10 +8,22 @@ Do NOT re-analyze or second-guess the plan. Just implement it accurately.
 You receive:
 - **scenarios**: Exact test cases with steps and assertions (from Flow Planner)
 - **featureContext**: UI selectors, button labels, toast messages (from feature file)
+- **scannedContext**: Real DOM analysis from `.scanned.md` file (if exists — MORE RELIABLE than featureContext)
 - **sourceFiles**: Relevant source code (only files specified by Flow Planner)
 - **pomAction**: "create" | "extend" | "reuse"
 - **existingPom**: Current POM file name (if reusing/extending)
-- **snapshots**: DOM info from real app (if available)
+- **snapshots**: Enhanced DOM info from real app (if available) — contains:
+  - `interactables[]` with pre-ranked `selectors[]` arrays
+  - `testIds[]` for data-testid attributes
+  - `components[]` for Avada/Polaris classes
+  - `roles[]` for ARIA role elements
+- **probeData**: Targeted element probe results (if available) — contains exact selectors for specific elements
+
+**Priority when data conflicts:** probeData > snapshots > scannedContext > featureContext > sourceFiles
+
+**Per-scenario flags (from Flow Planner output):**
+- `"useSnapshotSelectors": true` → scenario interacts with elements found in snapshot data — prefer snapshot `selectors[]` arrays
+- `"useScannedContext": true` → scanned DOM context is available — trust scanned data over source code context
 
 ## Codebase patterns (always read these first)
 
@@ -47,13 +59,71 @@ This file contains:
 
 ## Rules
 
-### Selectors (priority order)
-1. `getByTestId('...')` — if data-testid in feature context
-2. Verified selector from `polaris-playwright-map.md` — if component is listed there
-3. `getByRole('button/link/...', { name: '...' })` — exact label from feature context
-3. `getByText('...')` — exact text from feature context
-4. `getByLabel('...')` — for form inputs
-5. CSS selector — last resort only
+### Selector Decision Tree (MUST follow in order — stop at first match)
+
+For EACH element you need to interact with, walk this tree top-to-bottom:
+
+```
+1. Snapshot/probe data has this element with `selectors[]`?
+   YES → use the first (highest-ranked) selector from that array
+   NO  → continue ↓
+
+2. data-testid exists (from scanned context, snapshot, or feature file)?
+   YES → frame.getByTestId('the-testid')
+   NO  → continue ↓
+
+3. Element is listed in polaris-playwright-map.md?
+   YES → use the EXACT selector from the map (verified from Codegen)
+   NO  → continue ↓
+
+4. Element has a unique ARIA role + accessible name?
+   YES → frame.getByRole('role', { name: tRegex('i18n.key') })
+         ⚠️ For tabs: ALWAYS getByRole('tab'), NEVER getByText
+         ⚠️ For ActionList items: getByRole('button', { name: /text/i })
+   NO  → continue ↓
+
+5. Element is an Avada custom component (class .Avada-*)?
+   YES → frame.locator('.Avada-ClassName').first()
+   NO  → continue ↓
+
+6. Element has a form label?
+   YES → frame.getByLabel('Label text')
+   NO  → continue ↓
+
+7. Last resort — i18n text locator:
+   → frame.locator(tLoc('i18n.key')).first()
+   ⚠️ MUST append .first() — tLoc can match multiple elements
+   ⚠️ NEVER use for Tabs, ActionList items, or headings
+```
+
+### ⚠️ Selector Anti-Patterns (will cause failures)
+
+```typescript
+// ❌ BROKEN — getByText matches hidden Polaris tab spans
+frame.getByText('Compression')
+// ✅ CORRECT
+frame.getByRole('tab', { name: tRegex('ImageManager.tabs.compression') })
+
+// ❌ BROKEN — tLoc without .first() → strict mode violation on duplicate text
+frame.locator(tLoc('ButtonOptimize.labelOtm'))
+// ✅ CORRECT
+frame.locator(tLoc('ButtonOptimize.labelOtm')).first()
+
+// ❌ BROKEN — page.locator for iframe content
+page.locator('.Avada-Optimize-Button')
+// ✅ CORRECT
+frame.locator('.Avada-Optimize-Button').first()
+
+// ❌ FRAGILE — Polaris class alone (changes on upgrade)
+frame.locator('.Polaris-Button--primary')
+// ✅ BETTER — role-based
+frame.getByRole('button', { name: tRegex('key') })
+
+// ❌ BROKEN — bare text= without regex delimiters is NOT regex
+frame.locator(`text=${tRegex('key').source}`)
+// ✅ CORRECT — tLoc already wraps in text=/.../i
+frame.locator(tLoc('key')).first()
+```
 
 ### Code patterns
 - **Never hardcode handles** — use `APPS.[key].handle` from `helpers/apps.ts`

@@ -11,6 +11,9 @@ You receive:
 - **diffSummary**: List of changed files with additions/deletions counts
 - **overview**: App overview showing all pages and feature files
 - **sourceFileNames**: Names of source files available for the Code Writer
+- **snapshotAvailable**: Whether `snapshots/[app]/[page].json` exists (enhanced DOM data with interactables)
+- **probeAvailable**: Whether `snapshots/probe-[app]-[page].json` exists (targeted element probe data)
+- **scannedAvailable**: Whether `[feature].scanned.md` exists (real DOM analysis)
 
 ## Output
 
@@ -60,6 +63,8 @@ Return ONLY valid JSON (no markdown, no explanation):
    - `edge-case`: rare scenarios (rate limits, empty states, concurrent actions)
 5. Tag the most important scenario `@smoke`
 6. Keep scenarios to 3-6 per feature. Quality over quantity.
-9. **description** must be in Vietnamese, 1-3 sentences. Explain what the test does AND expected behavior. Written for human testers to review.
-7. If description is vague, use diffSummary to infer what changed and test accordingly
-8. Bugs (if provided) are ADDITIONAL scenarios — don't replace the main feature test
+7. **description** must be in Vietnamese, 1-3 sentences. Explain what the test does AND expected behavior. Written for human testers to review.
+8. If description is vague, use diffSummary to infer what changed and test accordingly
+9. Bugs (if provided) are ADDITIONAL scenarios — don't replace the main feature test
+10. If snapshot/probe data is available, add `"useSnapshotSelectors": true` to scenarios that interact with elements found in snapshot data — this tells Code Writer to prefer snapshot-verified selectors
+11. If scanned context is available, add `"useScannedContext": true` — this tells Code Writer to trust scanned DOM over source code context

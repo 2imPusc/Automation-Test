@@ -63,3 +63,40 @@ Return ONLY valid JSON (no markdown):
 5. If toast text differs slightly → app-bug or test-bug (hardcoded wrong text)
 6. Always provide actionable suggestions, not just "investigate"
 7. If you see the app loaded correctly but button/element is missing → likely app-bug
+
+## Selector-Specific Diagnostics (most common failure type)
+
+When error is `Timeout waiting for selector` or `strict mode violation`, diagnose using this checklist:
+
+### Strict mode violation (matched N elements, expected 1)
+**Root cause:** Selector is too broad — matches multiple DOM elements.
+**Common culprits:**
+- `getByText()` on text that appears in Polaris Tab labels (hidden spans)
+- `tLoc()` without `.first()` — text exists in heading + button + tooltip
+- `getByRole('button')` without `{ name: ... }` filter
+**Fix:** Add `.first()`, switch to `getByRole` with name, or use more specific selector.
+
+### Element not found (timeout)
+**Diagnostic steps:**
+1. Is it inside iframe? → Must use `frame.*`, not `page.*`
+2. Is the element dynamically rendered (after click/API call)? → Need `waitFor()` before interaction
+3. Is a Shopify overlay blocking? (Sidekick, Dev Console) → Call `closeShopifyOverlays()` first
+4. Is the selector using a Polaris class that changed? → Use `getByRole` or Avada class instead
+5. Is the i18n key wrong? → Check `t('key')` resolves to actual text in origin.json
+
+### Element found but not interactable
+**Common causes:**
+- Polaris IndexTable checkboxes are hidden until hover → need `click({ force: true })`
+- Button disabled because app is loading → need to wait for loading state to clear
+- Element behind Shopify Sidekick/Dev Console → call `closeShopifyOverlays()`
+- Polaris Popover not yet open → need `waitForTimeout(400)` after triggering popover
+
+### Probe recommendation
+When suggesting a selector fix, recommend running the probe tool:
+```json
+{
+  "action": "run-probe",
+  "command": "npm run probe -- --app [app] --page [page] --query \"[element text]\"",
+  "description": "Get verified selector from live DOM"
+}
+```

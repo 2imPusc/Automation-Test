@@ -3,6 +3,25 @@
 > **Mục đích:** Reference tra cứu — khi gặp Polaris/Avada component trong UI, dùng selector nào trong Playwright.
 > **Nguyên tắc:** Ưu tiên stable selector (role, aria, custom class) hơn CSS fragile (nth, nested path).
 > **Cập nhật:** Mỗi khi phát hiện selector mới từ Playwright Codegen/recorded tests, thêm vào đây.
+> **Validation:** Chạy `npm run probe -- --query "element text"` để verify selector trên DOM thật.
+
+## 0. Quick Decision Table
+
+Dùng bảng này khi cần chọn selector strategy nhanh cho một component:
+
+| Component | ❌ ĐỪNG dùng | ✅ NÊN dùng | Lý do |
+|---|---|---|---|
+| **Polaris Button** | `getByText('Label')` | `getByRole('button', { name: tRegex('key') })` | Text match hidden elements |
+| **Polaris Tab** | `getByText('Tab Name')` | `getByRole('tab', { name: tRegex('key') })` | Hidden spans in tab labels |
+| **Polaris Toast** | `.Polaris-Frame-ToastManager` | `.Polaris-Frame-ToastManager [role="alert"]` | Wrapper always in DOM |
+| **Polaris Modal** | `[role="dialog"]` | `[role="dialog"]:not(#sidekick)` | Exclude Shopify Sidekick |
+| **IndexTable checkbox** | `.click()` | `.click({ force: true })` | Hidden until hover |
+| **Avada component** | `tLoc('key')` without `.first()` | `.Avada-ClassName` class | More stable than text match; tLoc OK as fallback with `.first()` |
+| **ActionList item** | `getByText('Option')` | `getByRole('button', { name: /Option/i })` | Items render as buttons |
+| **Form input** | `getByText('Label')` | `getByLabel('Label')` | Proper form association |
+| **Split button dropdown** | Click main button | Click `.Avada-Optimize-Button-suffix-wrapper` | Arrow is separate element |
+
+---
 
 ---
 

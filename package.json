@@ -18,6 +18,7 @@
     "test:generate": "echo 'DEPRECATED: Use Smart Run UI instead. Legacy CLI: node scripts/generate.legacy.js'",
     "test:run": "node scripts/run.js",
     "snapshot": "node scripts/snapshot.js",
+    "probe": "node scripts/probe.js",
     "scan-source": "node scripts/scan-source.js",
     "extract-context": "python3 skills/app-context-extractor/scripts/extract.py",
     "test:ui": "playwright test --ui",

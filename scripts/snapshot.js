@@ -51,12 +51,15 @@ function slugify(str) {
 }
 
 /**
- * Extract useful DOM info từ iframe:
- * - Tất cả text labels visible
- * - Buttons (role + name)
- * - Links (nav items)
- * - Inputs (type + label)
- * - Headings
+ * Extract selector-ready DOM info từ iframe.
+ *
+ * Thu thập đủ data để AI sinh Playwright selector chính xác:
+ * - Headings, buttons, links, inputs (cơ bản)
+ * - ARIA roles + names (cho getByRole)
+ * - data-testid attributes (cho getByTestId — selector ổn định nhất)
+ * - Avada/Polaris custom component classes (cho CSS selectors)
+ * - Interactable elements map (tổng hợp mọi element clickable)
+ * - Visible text snippets (context)
  */
 async function extractDomInfo(frame) {
   return await frame.evaluate(() => {
@@ -65,38 +68,97 @@ async function extractDomInfo(frame) {
       buttons: [],
       links: [],
       inputs: [],
+      tabs: [],
+      testIds: [],
+      roles: [],
+      components: [],
+      interactables: [],
       texts: [],
     };
 
-    // Headings
+    /** Check if element is actually visible on screen */
+    function isVisible(el) {
+      if (!el.offsetParent && el.tagName !== 'BODY' && el.tagName !== 'HTML') return false;
+      const style = window.getComputedStyle(el);
+      return style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0';
+    }
+
+    /** Get Avada/Polaris class names (stable selectors) */
+    function getStableClasses(el) {
+      if (!el.className || typeof el.className !== 'string') return [];
+      return el.className.split(' ').filter(c =>
+        c.startsWith('Avada-') || c.startsWith('Polaris-')
+      );
+    }
+
+    /** Build a concise DOM path showing parent context */
+    function getDomPath(el, depth = 3) {
+      const parts = [];
+      let current = el;
+      for (let i = 0; i < depth && current && current !== document.body; i++) {
+        const tag = current.tagName.toLowerCase();
+        const role = current.getAttribute('role');
+        const cls = getStableClasses(current);
+        let part = tag;
+        if (role) part += `[role="${role}"]`;
+        else if (cls.length) part += `.${cls[0]}`;
+        parts.unshift(part);
+        current = current.parentElement;
+      }
+      return parts.join(' > ');
+    }
+
+    // ── Headings ──────────────────────────────────────────────────────────────
     document.querySelectorAll('h1,h2,h3,h4').forEach(el => {
       const text = el.textContent?.trim();
-      if (text) info.headings.push({ tag: el.tagName.toLowerCase(), text });
-    });
-
-    // Buttons
-    document.querySelectorAll('button, [role="button"]').forEach(el => {
-      const text = el.textContent?.trim();
-      const ariaLabel = el.getAttribute('aria-label');
-      if (text || ariaLabel) {
-        info.buttons.push({ text: text || '', ariaLabel: ariaLabel || '' });
+      if (text && isVisible(el)) {
+        info.headings.push({
+          tag: el.tagName.toLowerCase(),
+          text,
+          testId: el.getAttribute('data-testid') || null,
+        });
       }
     });
 
-    // Nav links
-    document.querySelectorAll('nav a, [role="navigation"] a').forEach(el => {
+    // ── Buttons (enhanced) ────────────────────────────────────────────────────
+    document.querySelectorAll('button, [role="button"]').forEach(el => {
       const text = el.textContent?.trim();
-      if (text) info.links.push(text);
+      const ariaLabel = el.getAttribute('aria-label');
+      if (!text && !ariaLabel) return;
+      const visible = isVisible(el);
+      info.buttons.push({
+        text: text || '',
+        ariaLabel: ariaLabel || '',
+        testId: el.getAttribute('data-testid') || null,
+        classes: getStableClasses(el),
+        disabled: el.disabled || el.getAttribute('aria-disabled') === 'true',
+        visible,
+        domPath: getDomPath(el),
+      });
     });
 
-    // Inputs
-    document.querySelectorAll('input, select, textarea').forEach(el => {
-      const type = el.getAttribute('type') || el.tagName.toLowerCase();
+    // ── Links ─────────────────────────────────────────────────────────────────
+    document.querySelectorAll('a, [role="link"]').forEach(el => {
+      const text = el.textContent?.trim();
+      if (!text) return;
+      const isNav = !!el.closest('nav, [role="navigation"]');
+      info.links.push({
+        text,
+        href: el.getAttribute('href') || '',
+        isNav,
+        testId: el.getAttribute('data-testid') || null,
+        visible: isVisible(el),
+      });
+    });
+
+    // ── Inputs ────────────────────────────────────────────────────────────────
+    document.querySelectorAll('input, select, textarea, [role="combobox"], [role="slider"]').forEach(el => {
+      const type = el.getAttribute('type') || el.getAttribute('role') || el.tagName.toLowerCase();
       const name = el.getAttribute('name') || '';
       const placeholder = el.getAttribute('placeholder') || '';
       const ariaLabel = el.getAttribute('aria-label') || '';
+      const testId = el.getAttribute('data-testid') || null;
 
-      // Tìm label gần nhất
       let labelText = '';
       const id = el.getAttribute('id');
       if (id) {
@@ -104,10 +166,164 @@ async function extractDomInfo(frame) {
         if (label) labelText = label.textContent?.trim() || '';
       }
 
-      info.inputs.push({ type, name, placeholder, ariaLabel, label: labelText });
+      info.inputs.push({
+        type, name, placeholder, ariaLabel, label: labelText, testId,
+        classes: getStableClasses(el),
+        visible: isVisible(el),
+      });
     });
 
-    // Visible text snippets (để AI hiểu context của trang)
+    // ── Tabs ──────────────────────────────────────────────────────────────────
+    document.querySelectorAll('[role="tab"]').forEach(el => {
+      const text = el.textContent?.trim();
+      if (!text) return;
+      info.tabs.push({
+        text,
+        selected: el.getAttribute('aria-selected') === 'true',
+        testId: el.getAttribute('data-testid') || null,
+        visible: isVisible(el),
+      });
+    });
+
+    // ── data-testid elements ──────────────────────────────────────────────────
+    document.querySelectorAll('[data-testid]').forEach(el => {
+      info.testIds.push({
+        testId: el.getAttribute('data-testid'),
+        tag: el.tagName.toLowerCase(),
+        role: el.getAttribute('role') || null,
+        text: el.textContent?.trim()?.slice(0, 60) || '',
+        visible: isVisible(el),
+      });
+    });
+
+    // ── ARIA role elements (interactive only) ─────────────────────────────────
+    const interactiveRoles = [
+      'button', 'link', 'tab', 'menuitem', 'option', 'switch',
+      'checkbox', 'radio', 'slider', 'spinbutton', 'combobox',
+      'listbox', 'dialog', 'alertdialog', 'progressbar', 'alert',
+    ];
+    document.querySelectorAll('[role]').forEach(el => {
+      const role = el.getAttribute('role');
+      if (!interactiveRoles.includes(role)) return;
+      const name = el.getAttribute('aria-label')
+        || el.textContent?.trim()?.slice(0, 80)
+        || '';
+      if (!name) return;
+      info.roles.push({
+        role,
+        name,
+        testId: el.getAttribute('data-testid') || null,
+        classes: getStableClasses(el),
+        ariaExpanded: el.getAttribute('aria-expanded'),
+        ariaSelected: el.getAttribute('aria-selected'),
+        ariaDisabled: el.getAttribute('aria-disabled'),
+        visible: isVisible(el),
+      });
+    });
+
+    // ── Avada/Polaris custom components ───────────────────────────────────────
+    document.querySelectorAll('[class*="Avada-"], [class*="Polaris-"]').forEach(el => {
+      const classes = getStableClasses(el);
+      if (!classes.length) return;
+      // Only capture top-level component wrappers (skip deeply nested internals)
+      const parentClasses = getStableClasses(el.parentElement);
+      const isTopLevel = !parentClasses.some(c => classes.some(cc => c.startsWith(cc.split('--')[0])));
+      if (!isTopLevel) return;
+
+      const role = el.getAttribute('role');
+      const text = el.textContent?.trim()?.slice(0, 60) || '';
+      const interactable = el.matches(
+        'button, a, input, select, [role="button"], [role="tab"], [role="link"], [role="checkbox"]'
+      );
+
+      info.components.push({
+        classes,
+        tag: el.tagName.toLowerCase(),
+        role: role || null,
+        text,
+        interactable,
+        visible: isVisible(el),
+        ariaExpanded: el.getAttribute('aria-expanded'),
+        testId: el.getAttribute('data-testid') || null,
+      });
+    });
+
+    // ── Interactable elements map (unified) ───────────────────────────────────
+    // Combines all clickable/interactive elements into one sorted list.
+    // AI uses this to pick the best selector for each action.
+    const seen = new Set();
+    document.querySelectorAll(
+      'button, a, [role="button"], [role="tab"], [role="link"], [role="menuitem"], ' +
+      '[role="option"], [role="switch"], [role="checkbox"], [role="radio"], ' +
+      'input[type="checkbox"], input[type="radio"], [onclick], [data-testid]'
+    ).forEach(el => {
+      if (!isVisible(el)) return;
+      const text = el.textContent?.trim()?.slice(0, 60) || '';
+      const ariaLabel = el.getAttribute('aria-label') || '';
+      const key = `${el.tagName}:${text}:${ariaLabel}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+
+      const testId = el.getAttribute('data-testid');
+      const role = el.getAttribute('role') || (el.tagName === 'BUTTON' ? 'button' : null) || (el.tagName === 'A' ? 'link' : null);
+      const classes = getStableClasses(el);
+
+      // Build recommended Playwright selectors (best → worst)
+      // Order matches SKILL.md priority: testId > role > Avada class > label > tLoc
+      const selectors = [];
+      if (testId) {
+        selectors.push({ method: 'getByTestId', code: `frame.getByTestId('${testId}')`, stability: 'best' });
+      }
+      if (role && (ariaLabel || text)) {
+        const name = ariaLabel || text;
+        selectors.push({
+          method: 'getByRole',
+          code: `frame.getByRole('${role}', { name: /${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/i })`,
+          stability: 'good',
+        });
+      }
+      const avadaClass = classes.find(c => c.startsWith('Avada-'));
+      if (avadaClass) {
+        selectors.push({
+          method: 'locator (Avada class)',
+          code: `frame.locator('.${avadaClass}').first()`,
+          stability: 'good — app-specific class',
+        });
+      }
+      // getByLabel for form inputs
+      if (el.matches('input, select, textarea, [role="combobox"], [role="slider"]')) {
+        const inputLabel = ariaLabel || el.closest('label')?.textContent?.trim() || '';
+        if (inputLabel) {
+          selectors.push({
+            method: 'getByLabel',
+            code: `frame.getByLabel('${inputLabel.slice(0, 50)}')`,
+            stability: 'good',
+          });
+        }
+      }
+      // Fallback: text-based (fragile — warn AI)
+      if (text && selectors.length === 0) {
+        selectors.push({
+          method: 'getByText',
+          code: `frame.getByText('${text.slice(0, 40)}')`,
+          stability: 'fragile — use tLoc() with .first() instead for i18n support',
+        });
+      }
+
+      info.interactables.push({
+        tag: el.tagName.toLowerCase(),
+        role,
+        text,
+        ariaLabel,
+        testId: testId || null,
+        classes,
+        disabled: el.disabled || el.getAttribute('aria-disabled') === 'true',
+        selectors,
+        domPath: getDomPath(el),
+      });
+    });
+
+    // ── Visible text snippets ─────────────────────────────────────────────────
     const walker = document.createTreeWalker(
       document.body,
       NodeFilter.SHOW_TEXT,
@@ -115,8 +331,7 @@ async function extractDomInfo(frame) {
         acceptNode: (node) => {
           const parent = node.parentElement;
           if (!parent) return NodeFilter.FILTER_REJECT;
-          const style = window.getComputedStyle(parent);
-          if (style.display === 'none' || style.visibility === 'hidden') return NodeFilter.FILTER_REJECT;
+          if (!isVisible(parent)) return NodeFilter.FILTER_REJECT;
           const text = node.textContent?.trim();
           if (!text || text.length < 3) return NodeFilter.FILTER_REJECT;
           return NodeFilter.FILTER_ACCEPT;

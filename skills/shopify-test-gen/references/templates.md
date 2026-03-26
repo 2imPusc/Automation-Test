@@ -20,15 +20,23 @@ export class [PageName]Page extends BasePage {
   // ⚠️ RULE: NEVER hardcode UI text. Always use tLoc()/tRegex()/t() so locators
   //          work in any language (en, de, fr, vi, ...).
 
-  /** Primary CTA button — resolved from i18n key */
+  /** Primary CTA button — prefer role-based selector over text match.
+   * Decision: getByRole > Avada class > tLoc (see selector decision tree in code-writer.md)
+   */
   get primaryButton(): Locator {
-    // Use tLoc() for text-based locators → returns 'text=/EN text|Locale text/i'
-    return this.frame.locator(tLoc('[i18n.key.for.button.label]')).first();
+    // Option A (best): if data-testid exists
+    // return this.frame.getByTestId('primary-cta');
+    // Option B (good): role + i18n name
+    return this.frame.getByRole('button', { name: tRegex('[i18n.key.for.button.label]') });
+    // Option C (good): Avada custom class
+    // return this.frame.locator('.Avada-ComponentName').first();
+    // Option D (last resort): tLoc — MUST use .first()
+    // return this.frame.locator(tLoc('[i18n.key.for.button.label]')).first();
   }
 
-  /** Success toast / alert */
+  /** Success toast / alert — target inner [role="alert"], NOT the wrapper */
   get successToast(): Locator {
-    return this.frame.locator('[role="alert"], [class*="toast" i]').first();
+    return this.frame.locator('.Polaris-Frame-ToastManager [role="alert"]').first();
   }
 
   // ── Actions ───────────────────────────────────────────────────────────────
@@ -41,7 +49,7 @@ export class [PageName]Page extends BasePage {
   }
 
   async waitForLoad(): Promise<void> {
-    // Use tRegex() for getByRole name matching across locales
+    // Use getByRole('heading') — NOT getByText (avoids hidden Polaris span matches)
     await this.frame
       .getByRole('heading', { name: tRegex('[i18n.key.for.page.title]') })
       .waitFor({ state: 'visible', timeout: 20000 });

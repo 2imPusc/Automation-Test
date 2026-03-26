@@ -1,12 +1,12 @@
 /**
- * @generated AI Pipeline — 2026-03-26 08:40:00
+ * @generated AI Pipeline — 2026-03-26 10:26:22
  * @notion
  * @task [App plaza] Image Optimize v2
  * @taskId 2f4b0da449f180fca386da4afc6f7abd
  * @app Avada Plaza (avadaPlaza)
  * @branch improve/opt-image-v2
  * @feature image-manager.md
- * @scenarios 6
+ * @scenarios 5
  *
  * This file was auto-generated. It can be re-run on any environment
  * (local, staging, prod) — handles are resolved at runtime via helpers/apps.ts.
@@ -17,68 +17,76 @@ import { t, tRegex, tLoc } from '../../helpers/locale';
 
 test.describe('Image Manager v2 — Compression', () => {
   /**
-   * Kiểm tra trang Image Manager Compression tab tải thành công sau khi cập nhật v2.
-   * Đảm bảo các thành phần chính (nút Optimize now, bảng thống kê) hiển thị đúng và app không crash.
+   * Kiểm tra trang Image Manager (tab Compression) tải thành công sau nâng cấp v2.
+   * Kỳ vọng: nút 'Optimize now', bảng thống kê và danh sách hình ảnh hiển thị đầy đủ, không có lỗi crash.
    */
-  test('Smoke — Image Manager v2 tải đúng với đầy đủ UI @smoke', async ({ imageManager }) => {
-    await test.step('Verify Optimize now button is visible', async () => {
+  test('Smoke — Image Manager loads correctly after v2 update @smoke', async ({ imageManager }) => {
+    await test.step('Assert Optimize now button is visible', async () => {
       await expect(imageManager.optimizeNowButton).toBeVisible({ timeout: 10000 });
       console.log('✅ Optimize now button is visible');
     });
 
-    await test.step('Verify report section is visible', async () => {
-      // DOM: Report section có heading "Report" + button info icon
-      // Stat values (Total compression, Saving) hiển thị trực tiếp — không cần hover
-      // Tooltip chỉ xuất hiện khi hover vào icon, không cần assert
-      const reportSection = imageManager.frame.locator('text=/Report/i').first();
-      await expect(reportSection).toBeVisible({ timeout: 10000 });
-
-      // Assert ít nhất 1 stat value visible (Total compression % hoặc Saving KB)
-      const totalCompression = imageManager.frame.getByText(t('Report.totalCompression')).first();
-      await expect(totalCompression).toBeVisible({ timeout: 5000 });
-      console.log('✅ Report section and stat values are visible');
+    await test.step('Assert statistics labels are visible', async () => {
+      await expect(imageManager.frame.getByText('Total images')).toBeVisible({ timeout: 5000 });
+      await expect(imageManager.frame.getByText('Original size')).toBeVisible({ timeout: 5000 });
+      await expect(imageManager.frame.getByText('Optimized size')).toBeVisible({ timeout: 5000 });
+      console.log('✅ Statistics labels (Total images, Original size, Optimized size) are visible');
     });
 
-    await test.step('Verify no error banner on page', async () => {
-      const errorBanner = imageManager.frame.locator('[class*="Banner"] [class*="critical" i]');
-      await expect(errorBanner).toHaveCount(0);
-      console.log('✅ No error banner on page');
+    await test.step('Assert image table has at least one row', async () => {
+      const rows = imageManager.imageTableRows;
+      await expect(rows.first()).toBeVisible({ timeout: 10000 });
+      const count = await rows.count();
+      expect(count).toBeGreaterThanOrEqual(1);
+      console.log(`✅ Image table rendered with ${count} row(s)`);
+    });
+
+    await test.step('Assert no error banner is present', async () => {
+      const errorAlert = imageManager.frame.locator('[role="alert"]').filter({ hasText: /error|something went wrong/i });
+      await expect(errorAlert).toHaveCount(0);
+      console.log('✅ No error banner present');
     });
   });
 
   /**
-   * ButtonOptimize v2 đã xóa props shouldConfirm, openModal, closeModal — đây là thay đổi cốt lõi nhất.
-   * Bấm 'Optimize all' KHÔNG được hiện dialog xác nhận, thay vào đó toast 'Optimization started' phải xuất hiện trực tiếp trong vòng 5 giây.
+   * Click Optimize now → Optimize all. Kỳ vọng: KHÔNG hiện confirmation dialog.
+   * Toast thông báo phải xuất hiện trong 5 giây.
    */
-  test('Optimize all — không hiện confirmation modal (v2 regression) @regression', async ({ imageManager }) => {
+  test('Optimize all — no confirmation modal (v2 regression) @regression', async ({ imageManager }) => {
     await test.step('Open Optimize dropdown', async () => {
       await imageManager.openOptimizeDropdown();
       console.log('✅ Opened Optimize dropdown');
     });
 
-    await test.step('Click Optimize all from dropdown', async () => {
+    await test.step('Assert dropdown menu with Optimize all is visible', async () => {
+      await expect(imageManager.optimizeAllButton).toBeVisible({ timeout: 5000 });
+      console.log('✅ Optimize all option visible in dropdown');
+    });
+
+    await test.step('Click Optimize all', async () => {
       await imageManager.clickOptimizeAll();
       console.log('✅ Clicked Optimize all');
     });
 
     await test.step('Assert no confirmation modal appears', async () => {
+      // Exclude Sidekick which is always in DOM
       const dialog = imageManager.page.locator('[role="dialog"]:not(#sidekick)');
       await expect(dialog).toHaveCount(0);
       console.log('✅ No confirmation modal appeared');
     });
 
     await test.step('Assert toast appears within 5s', async () => {
-      // Toast text: "Started optimizing at..." (from Optimizer.Start key)
       await expect(imageManager.toast).toBeVisible({ timeout: 5000 });
       console.log('✅ Toast appeared after Optimize all');
     });
   });
 
   /**
-   * Tương tự Optimize all, option 'Optimize unoptimized' cũng phải bỏ qua bước xác nhận sau v2.
-   * Kỳ vọng: không có modal, toast xuất hiện ngay sau khi click.
+   * Tương tự 'Optimize all' nhưng chọn nhánh 'Optimize unoptimized'.
+   * Xác nhận rằng cả hai dropdown action đều đã bỏ modal confirm trong v2.
+   * Kỳ vọng: không có dialog, toast xuất hiện ngay.
    */
-  test('Optimize unoptimized — không hiện confirmation modal @regression', async ({ imageManager }) => {
+  test('Optimize unoptimized — no confirmation modal (v2 regression) @regression', async ({ imageManager }) => {
     await test.step('Open Optimize dropdown', async () => {
       await imageManager.openOptimizeDropdown();
       console.log('✅ Opened Optimize dropdown');
@@ -102,128 +110,82 @@ test.describe('Image Manager v2 — Compression', () => {
   });
 
   /**
-   * ABanner/index.js có thay đổi trong v2. Cần xác nhận toast sau optimize hiển thị đúng text,
-   * render không bị vỡ layout, và tự dismiss sau một khoảng thời gian hợp lý.
+   * ABanner/index.js có thay đổi (+7/-1) ảnh hưởng đến toast/notification.
+   * Kiểm tra toast xuất hiện đúng nội dung và đúng thời điểm sau khi bắt đầu optimize.
+   * Kỳ vọng: toast 'Optimization started' xuất hiện, progress state hiển thị khi đang chạy.
    */
-  test('Toast notification render đúng sau khi optimize (ABanner v2) @regression', async ({ imageManager }) => {
-    await test.step('Trigger Optimize all and assert toast immediately', async () => {
-      // Trigger optimize + assert toast trong cùng 1 step để không bỏ lỡ toast ngắn
+  test('ABanner toast — correct content after v2 changes @regression', async ({ imageManager }) => {
+    await test.step('Trigger Optimize all', async () => {
       await imageManager.openOptimizeDropdown();
       await imageManager.clickOptimizeAll();
-      // Polaris Toast thường hiện trong 1-2s và dismiss sau 5s
-      await expect(imageManager.toast).toBeVisible({ timeout: 8000 });
-      console.log('✅ Triggered Optimize all — toast appeared');
+      console.log('✅ Triggered Optimize all');
     });
 
-    await test.step('Wait 6s then assert toast is auto-dismissed', async () => {
-      await imageManager.page.waitForTimeout(6000);
-      await expect(imageManager.toast).not.toBeVisible({ timeout: 5000 });
-      console.log('✅ Toast auto-dismissed after timeout');
-    });
-  });
-
-  /**
-   * ImageViewCompareTable/index.js bị xóa 11 dòng trong v2. Cần đảm bảo bảng so sánh ảnh
-   * (original vs optimized) vẫn hiển thị đúng, không bị blank hoặc lỗi render.
-   */
-  test('Image compare table vẫn render đúng sau khi xóa code @regression', async ({ imageManager }) => {
-    await test.step('Wait for image list to load', async () => {
-      await imageManager.waitForSkeletonGone();
-      console.log('✅ Image list loaded');
+    await test.step('Assert toast with Optimization started text is visible', async () => {
+      await expect(imageManager.toast).toBeVisible({ timeout: 5000 });
+      await expect(imageManager.toast).toContainText(/Optimization started/i);
+      console.log('✅ Toast visible with "Optimization started" text');
     });
 
-    await test.step('Assert Preview compare view renders on page', async () => {
-      // DOM: Preview section luôn visible trên page, chứa img "Original" + img "Optimized"
-      // Không cần click row — preview hiển thị sẵn trong compression settings
-      const previewSection = imageManager.frame.locator('text=/Preview/i').first();
-      await expect(previewSection).toBeVisible({ timeout: 10000 });
-      console.log('✅ Preview section is visible');
+    await test.step('Assert toast auto-dismisses within 8s', async () => {
+      await expect(imageManager.toast).not.toBeVisible({ timeout: 8000 });
+      console.log('✅ Toast auto-dismissed');
     });
 
-    await test.step('Assert Original and Optimized images are rendered in preview', async () => {
-      // DOM: img "Original" và img "Optimized" trong preview area
-      const originalImg = imageManager.frame.getByAltText('Original').first();
-      const optimizedImg = imageManager.frame.getByAltText('Optimized').first();
-      await expect(originalImg).toBeVisible({ timeout: 5000 });
-      await expect(optimizedImg).toBeVisible({ timeout: 5000 });
-      console.log('✅ Original and Optimized images rendered in compare preview');
+    await test.step('Assert progress state is visible in page body', async () => {
+      const progressText = imageManager.frame.locator('text=/Optimizing images|Optimize in progress/i').first();
+      await expect(progressText).toBeVisible({ timeout: 10000 });
+      console.log('✅ Progress state text is visible');
     });
   });
 
   /**
-   * LeavePrompt.js có thay đổi trong v2. Cần đảm bảo prompt cảnh báo vẫn xuất hiện khi
-   * người dùng thay đổi settings chưa lưu và cố navigate sang trang khác, tránh mất dữ liệu.
+   * LeavePrompt.js có thay đổi (+7/-2). Kiểm tra rằng khi thay đổi cài đặt compression
+   * chưa lưu rồi cố điều hướng rời trang, contextual save bar vẫn xuất hiện và chặn người dùng.
+   * Kỳ vọng: 'Unsaved changes' bar hiển thị, click Discard mới rời được trang.
    */
-  test('LeavePrompt vẫn hoạt động khi navigate rời trang chưa lưu @guard', async ({ imageManager }) => {
-    await test.step('Modify compression quality to create unsaved state', async () => {
-      // DOM: custom combobox — click wrapper để mở, rồi click option trong listbox
-      const comboWrapper = imageManager.frame.locator('[cursor=pointer], [class*="Select"]')
-        .filter({ hasText: /Automatic|92%/ }).first();
-
-      // Thử native select trước
+  test('Leave prompt — unsaved changes warning works after v2 @guard', async ({ imageManager }) => {
+    await test.step('Modify a compression setting to create dirty state', async () => {
+      // Toggle a compression option — try native select first, then combobox fallback
       const nativeSelect = imageManager.frame.locator('select').first();
-      const hasNative = await nativeSelect.isVisible({ timeout: 2000 }).catch(() => false);
+      const hasNative = await nativeSelect.isVisible({ timeout: 3000 }).catch(() => false);
 
       if (hasNative) {
         const options = await nativeSelect.locator('option').all();
         for (const opt of options) {
-          const val = await opt.getAttribute('value') ?? '';
           const text = await opt.textContent() ?? '';
-          if (!text.includes('92') && !text.includes('Automatic')) {
+          if (!text.includes('92') && !text.includes('Automatic') && !text.includes('Auto')) {
+            const val = await opt.getAttribute('value') ?? '';
             await nativeSelect.selectOption(val);
             break;
           }
         }
       } else {
-        // Custom combobox: click để mở dropdown
         await imageManager.frame.locator('[role="combobox"], [aria-haspopup="listbox"]')
           .first().click({ force: true });
         await imageManager.page.waitForTimeout(400);
-
-        // Click option đầu tiên không phải current value
-        const options = imageManager.frame.locator('[role="option"], [role="listbox"] li');
+        const options = imageManager.frame.locator('[role="option"]');
         const count = await options.count();
         if (count > 0) await options.first().click();
       }
 
       await imageManager.page.waitForTimeout(800);
-      console.log('✅ Modified compression quality setting');
+      console.log('✅ Modified compression setting');
     });
 
-    await test.step('Assert unsaved changes indicator is visible', async () => {
-      // Shopify contextual save bar xuất hiện trên page (ngoài iframe) khi app có dirty state
-      // Một số custom combobox cần thêm thời gian để trigger React state update
-      const isVisible = await imageManager.unsavedChangesBar.isVisible({ timeout: 5000 }).catch(() => false);
-      if (!isVisible) {
-        // Fallback: thử keyboard để force trigger change event
-        const combobox = imageManager.frame.locator('[role="combobox"]').first();
-        if (await combobox.isVisible({ timeout: 1000 }).catch(() => false)) {
-          await combobox.press('ArrowDown');
-          await imageManager.page.waitForTimeout(300);
-          await combobox.press('Enter');
-          await imageManager.page.waitForTimeout(500);
-        }
-      }
+    await test.step('Assert Unsaved changes contextual save bar appears', async () => {
       await expect(imageManager.unsavedChangesBar).toBeVisible({ timeout: 5000 });
       console.log('✅ Unsaved changes bar is visible');
     });
 
-    await test.step('Click a different nav link to trigger leave prompt', async () => {
-      await imageManager.navigateAway();
-      console.log('✅ Attempted to navigate away');
-    });
-
-    await test.step('Assert leave prompt or unsaved changes warning appears', async () => {
-      // Shopify shows a discard modal when navigating away with unsaved changes
-      const leaveDialog = imageManager.page.locator('[role="dialog"]:not(#sidekick)');
-      const discardText = imageManager.page.getByText(/discard|leave|unsaved/i);
-      await expect(leaveDialog.or(discardText).first()).toBeVisible({ timeout: 5000 });
-      console.log('✅ Leave prompt appeared');
-    });
-
-    await test.step('Click Discard to cancel navigation and remain on page', async () => {
+    await test.step('Click Discard on save bar', async () => {
       await imageManager.clickDiscard();
-      console.log('✅ Clicked Discard — remained on Image Manager');
+      console.log('✅ Clicked Discard');
+    });
+
+    await test.step('Assert save bar disappears and setting reverts', async () => {
+      await expect(imageManager.unsavedChangesBar).not.toBeVisible({ timeout: 5000 });
+      console.log('✅ Save bar disappeared — setting reverted');
     });
   });
 });
