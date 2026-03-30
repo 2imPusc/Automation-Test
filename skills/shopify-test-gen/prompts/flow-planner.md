@@ -9,8 +9,10 @@ You receive:
 - **description**: Feature description from Notion task
 - **bugs**: Known bugs from testers (may be empty — that's normal)
 - **diffSummary**: List of changed files with additions/deletions counts
-- **overview**: App overview showing all pages and feature files
-- **sourceFileNames**: Names of source files available for the Code Writer
+- **overview**: App pages table (which pages exist, which feature files map to them)
+- **sourceFileNames**: Names of source files relevant to this diff (max 5)
+- **productSpec**: (optional) Extracted from official product documentation — contains exact button labels, toast messages, and user flows as defined by PM/designer. **Use these as ground truth for assertions.**
+- **existingTests**: Test files already covering this app — avoid duplicating, ensure regression coverage
 - **snapshotAvailable**: Whether `snapshots/[app]/[page].json` exists (enhanced DOM data with interactables)
 - **probeAvailable**: Whether `snapshots/probe-[app]-[page].json` exists (targeted element probe data)
 - **scannedAvailable**: Whether `[feature].scanned.md` exists (real DOM analysis)
@@ -68,3 +70,5 @@ Return ONLY valid JSON (no markdown, no explanation):
 9. Bugs (if provided) are ADDITIONAL scenarios — don't replace the main feature test
 10. If snapshot/probe data is available, add `"useSnapshotSelectors": true` to scenarios that interact with elements found in snapshot data — this tells Code Writer to prefer snapshot-verified selectors
 11. If scanned context is available, add `"useScannedContext": true` — this tells Code Writer to trust scanned DOM over source code context
+12. **Product Spec priority**: If `productSpec` is provided, use the exact button labels and flow steps from it when writing scenario steps and assertions. Do NOT invent UI text — the spec is the source of truth.
+13. **Existing tests**: Check the existing test list before adding a `smoke` scenario — if a smoke test already exists for this page, make the new smoke scenario complementary (different actions), not a duplicate.

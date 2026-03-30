@@ -19,7 +19,14 @@ You receive:
   - `roles[]` for ARIA role elements
 - **probeData**: Targeted element probe results (if available) — contains exact selectors for specific elements
 
-**Priority when data conflicts:** probeData > snapshots > scannedContext > featureContext > sourceFiles
+- **productSpec**: (optional) Exact UI text from official product documentation — button labels, toast messages, user flows as defined by PM/designer.
+
+**Priority when data conflicts:** probeData > snapshots > scannedContext > productSpec > featureContext > sourceFiles
+
+**Product Spec rule (MANDATORY when provided):**
+- Use VERBATIM text from `productSpec.buttons[]` for `getByRole('button', { name: '...' })` assertions
+- Use VERBATIM text from `productSpec.toasts[]` for toast assertions
+- Do NOT invent, paraphrase, or translate button/toast text from source code — the spec is ground truth
 
 **Per-scenario flags (from Flow Planner output):**
 - `"useSnapshotSelectors": true` → scenario interacts with elements found in snapshot data — prefer snapshot `selectors[]` arrays
