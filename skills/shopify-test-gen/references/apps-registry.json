@@ -11,8 +11,8 @@
   "seo": {
     "name": "Avada SEO",
     "repoPath": "~/seo",
-    "srcPath": "src",
-    "localePath": "src/locale/translations/origin.json",
+    "srcPath": "packages/assets/src",
+    "localePath": "packages/assets/src/locale/translations/origin.json",
     "testDir": "tests/seo",
     "contextDir": "skills/shopify-test-gen/references/app-context/seo"
   },
