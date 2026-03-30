@@ -342,50 +342,141 @@ async function main() {
 
   // ── Gather info ──────────────────────────────────────────────────────────
 
-  // App key
+  // ── Question 1: App key ──────────────────────────────────────────────────
+  console.log('─────────────────────────────────────────────────────────────');
+  console.log('❓ Câu 1/8 — App Key');
+  console.log('');
+  console.log('   Tên định danh của app trong toàn bộ hệ thống (code, config, logs).');
+  console.log('   Quy tắc: viết liền, chữ cái đầu thường, các từ tiếp theo viết HOA.');
+  console.log('');
+  console.log('   Ví dụ:');
+  console.log('     avadaPlaza     (Avada Plaza / Image Optimizer)');
+  console.log('     seo            (Avada SEO Suite)');
+  console.log('     googleFeed     (Google Product Feed)');
+  console.log('     avadaEmail     (Avada Email Marketing)');
+  console.log('');
+
   let appKey = '';
   while (!appKey) {
-    appKey = await ask(rl, '1. App key (camelCase, e.g. "googleFeed")');
+    appKey = await ask(rl, '   👉 Nhập app key');
     if (!appKey.match(/^[a-z][a-zA-Z0-9]+$/)) {
-      console.log('   ⚠️  Phải là camelCase, bắt đầu bằng chữ thường');
+      console.log('   ⚠️  Phải bắt đầu bằng chữ thường, không dấu, không khoảng trắng');
       appKey = '';
     } else if (existingKeys.includes(appKey)) {
-      console.log(`   ⚠️  "${appKey}" đã tồn tại`);
+      console.log(`   ⚠️  "${appKey}" đã tồn tại rồi`);
       appKey = '';
     }
   }
 
-  // App name
-  const appName = await ask(rl, '2. App name (human readable, e.g. "Google Product Feed")',
+  // ── Question 2: App name ──────────────────────────────────────────────────
+  console.log('');
+  console.log('─────────────────────────────────────────────────────────────');
+  console.log('❓ Câu 2/8 — Tên App (hiển thị)');
+  console.log('');
+  console.log('   Tên đầy đủ, dễ đọc của app. Hiển thị trong menu và log.');
+  console.log('   Thường là tên thương mại của app trên Shopify App Store.');
+  console.log('');
+  console.log('   Ví dụ: "Google Product Feed", "Avada Email Marketing"');
+  console.log('');
+  const appName = await ask(rl, '   👉 Nhập tên app',
     appKey.replace(/([A-Z])/g, ' $1').trim()
   );
 
-  // App folder (kebab-case)
+  // ── Question 3: App folder ────────────────────────────────────────────────
+  console.log('');
+  console.log('─────────────────────────────────────────────────────────────');
+  console.log('❓ Câu 3/8 — Tên thư mục test');
+  console.log('');
+  console.log('   Tên thư mục chứa test files của app này.');
+  console.log('   Quy tắc: chữ thường, các từ nối bằng dấu gạch ngang (-).');
+  console.log('   Script đã tự gợi ý — nhấn Enter để chấp nhận.');
+  console.log('');
+  console.log('   Ví dụ: "google-feed", "avada-email", "seo-on-blog"');
+  console.log('');
   const defaultFolder = appKey.replace(/([A-Z])/g, '-$1').toLowerCase().replace(/^-/, '');
-  const appFolder = await ask(rl, `3. Test folder (kebab-case, e.g. "google-feed")`, defaultFolder);
+  const appFolder = await ask(rl, '   👉 Nhập tên thư mục', defaultFolder);
 
-  // Env key
+  // ── Question 4: Env key ───────────────────────────────────────────────────
+  console.log('');
+  console.log('─────────────────────────────────────────────────────────────');
+  console.log('❓ Câu 4/8 — Tên biến trong file .env');
+  console.log('');
+  console.log('   Tên biến môi trường để lưu "handle" của app.');
+  console.log('   Handle là đoạn text xuất hiện trong URL khi bạn mở app trên Shopify Admin:');
+  console.log('   admin.shopify.com/store/your-store/apps/[HANDLE-Ở-ĐÂY]');
+  console.log('');
+  console.log('   Quy tắc: CHỮ_HOA_VÀ_GẠCH_DƯỚI, kết thúc bằng _HANDLE');
+  console.log('   Script đã tự gợi ý — nhấn Enter để chấp nhận.');
+  console.log('');
   const defaultEnvKey = appFolder.toUpperCase().replace(/-/g, '_') + '_HANDLE';
-  const handleEnvKey = await ask(rl, `4. .env handle key (e.g. "GOOGLE_FEED_HANDLE")`, defaultEnvKey);
+  const handleEnvKey = await ask(rl, '   👉 Nhập tên biến', defaultEnvKey);
 
-  // Repo folder
+  // ── Question 5: Repo folder ───────────────────────────────────────────────
+  console.log('');
+  console.log('─────────────────────────────────────────────────────────────');
+  console.log('❓ Câu 5/8 — Thư mục source code trên máy');
+  console.log('');
+  console.log('   AI cần đọc source code của app để hiểu cấu trúc và viết test đúng.');
+  console.log('   Đây là tên thư mục sau khi clone repo về máy (thường nằm ở ~/).');
+  console.log('');
+  console.log('   Hỏi dev để biết tên repo và cách clone về.');
+  console.log('   Ví dụ: nếu bạn đã clone vào ~/google-product-feed → nhập "google-product-feed"');
+  console.log('');
+  console.log('   ⚠️  Nếu chưa clone, nhập tên dự kiến rồi clone sau.');
+  console.log('');
   const defaultRepo = appFolder;
-  const repoFolder = await ask(rl, `5. Local repo folder (~/[folder], e.g. "google-product-feed")`, defaultRepo);
+  const repoFolder = await ask(rl, '   👉 Nhập tên thư mục repo', defaultRepo);
 
-  // Src path
-  const srcPath = await ask(rl, '6. Source code path bên trong repo (e.g. "packages/assets/src")', 'src');
+  // ── Question 6: Src path ──────────────────────────────────────────────────
+  console.log('');
+  console.log('─────────────────────────────────────────────────────────────');
+  console.log('❓ Câu 6/8 — Đường dẫn source code bên trong repo');
+  console.log('');
+  console.log('   Bên trong repo, source code React/JS thường không nằm ngay gốc.');
+  console.log('   Hỏi dev về cấu trúc thư mục của app.');
+  console.log('');
+  console.log('   Ví dụ phổ biến tại Avada:');
+  console.log('     packages/assets/src   ← avadaPlaza, seo (monorepo)');
+  console.log('     src                   ← app đơn giản hơn');
+  console.log('');
+  const srcPath = await ask(rl, '   👉 Nhập đường dẫn src', 'src');
 
-  // Keyword detection
-  console.log(`\n7. Keyword để detect app từ Notion task title`);
-  console.log(`   (Pipeline dùng để tự nhận ra đây là app nào khi parse task)`);
+  // ── Question 7: Keywords ──────────────────────────────────────────────────
+  console.log('');
+  console.log('─────────────────────────────────────────────────────────────');
+  console.log('❓ Câu 7/8 — Từ khóa nhận diện app trong Notion task');
+  console.log('');
+  console.log('   Khi bạn paste link Notion task vào Smart Run, pipeline cần biết');
+  console.log('   task đó thuộc app nào. Nó nhìn vào tiêu đề task và tìm các từ khóa này.');
+  console.log('');
+  console.log('   → Nhập các từ thường xuất hiện trong tiêu đề task của app này.');
+  console.log('   → Nhiều từ thì cách nhau bằng dấu phẩy.');
+  console.log('');
+  console.log('   Ví dụ:');
+  console.log('     Title Notion: "[Google Feed] Fix product sync" → keywords: "feed,google-feed"');
+  console.log('     Title Notion: "[Email] Update template" → keywords: "email,avada-email"');
+  console.log('');
   const defaultKeyword = appFolder.split('-')[0];
-  const appNameKeywords = await ask(rl, `   Keywords (comma-separated, e.g. "feed,product-feed")`, defaultKeyword);
+  const appNameKeywords = await ask(rl, '   👉 Nhập từ khóa', defaultKeyword);
 
-  // Product spec path
-  console.log('\n8. GitLab product spec path (để lấy button/toast text)');
-  console.log('   Ví dụ: "google-product-feed/features/Feature specification document"');
-  console.log('   Nhấn Enter để bỏ qua (có thể thêm sau)');
-  const productSpecPath = await ask(rl, '   Spec path', '');
+  // ── Question 8: Product spec path ────────────────────────────────────────
+  console.log('');
+  console.log('─────────────────────────────────────────────────────────────');
+  console.log('❓ Câu 8/8 — Đường dẫn tài liệu spec trong GitLab product repo');
+  console.log('');
+  console.log('   Pipeline có thể đọc file spec của PM/designer trên GitLab để biết');
+  console.log('   tên button, toast message chính xác → AI viết test đúng hơn.');
+  console.log('');
+  console.log('   Đây là đường dẫn thư mục chứa các file .md trong repo product.');
+  console.log('   Hỏi PM hoặc vào GitLab: avada/falcon/product/product để xem.');
+  console.log('');
+  console.log('   Ví dụ:');
+  console.log('     google-product-feed/features/Feature specification document');
+  console.log('     avada-seo-suite/features/Feature specification document');
+  console.log('');
+  console.log('   Nhấn Enter để bỏ qua (có thể thêm sau trong product-spec-fetcher.js)');
+  console.log('');
+  const productSpecPath = await ask(rl, '   👉 Nhập đường dẫn spec', '');
 
   rl.close();
 
