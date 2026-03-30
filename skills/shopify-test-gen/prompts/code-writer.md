@@ -37,12 +37,9 @@ fixtures/index.ts                  ← available fixtures
 
 ## ⚠️ Polaris ↔ Playwright Reference (MANDATORY)
 
-**Before writing ANY selector**, consult:
-```
-skills/shopify-test-gen/references/polaris-playwright-map.md
-```
+**Before writing ANY selector**, consult the **Polaris ↔ Playwright Reference** section embedded in this prompt (at the end).
 
-This file contains:
+This reference contains:
 - Verified selectors for Avada custom components (ButtonOptimize, OptimizeButton split button...)
 - Polaris standard component patterns (TextField, Select, Tabs, Modal, Toast, IndexTable...)
 - Shopify Admin overlays (Dev Console, Sidekick, Contextual Save Bar)

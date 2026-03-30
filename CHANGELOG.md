@@ -8,6 +8,16 @@ Format theo [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Fixed — Docs accuracy update
+
+- **README.md, SETUP.md, GUIDE.md, FLOW.md**: Sửa tài liệu cho khớp mã nguồn thực tế
+  - Multi-environment: sửa từ "file `.env.staging` riêng" → **1 file `.env` duy nhất** với prefix `STAGING_*`
+  - Bỏ đề cập OpenClaw (không còn dùng), cập nhật flow dùng Claude Code CLI + Web UI Smart Run
+  - Cập nhật cấu trúc thư mục: thêm `recorded-features/`, `helpers/locale.ts`, `skills/app-context-extractor/`, bỏ `snapshots/`, `.context/`
+  - Sửa `generate.js` → `generate.legacy.js` (deprecated)
+  - Cập nhật menu `test:pick` từ 8 → 9 options
+  - Sửa CHANGELOG v1.3.0: bỏ `skills/shopify-test-gen/examples/` (không tồn tại, thực tế là `prompts/` + `references/`)
+
 ---
 
 ## [1.4.0] — 2026-03-20
@@ -15,14 +25,8 @@ Format theo [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Added — Phase C: UI Snapshot + Context Injection
 
 - **`npm run snapshot`** (`scripts/snapshot.js`): Playwright mở app thật, chụp screenshot + extract DOM info
-  - Lưu `snapshots/[app]/[page].png` + `[page].json` (buttons, inputs, links, headings thật)
-  - Tạo `snapshots/index.json` để generate.js tra cứu
-  - Hỏi tester muốn chụp trang nào (home + optional extra page)
-- **`generate.js`** update: tự detect snapshots → inject DOM info vào prompt Claude Code
-  - Khi có snapshot: Claude Code dùng tên button/input thật → selector chính xác hơn
-  - Khi không có snapshot: hiện gợi ý chạy `npm run snapshot`
 - **`SKILL.md`** update: thêm hướng dẫn đọc snapshot và ưu tiên DOM info
-- **`test:pick`**: thêm option 8 "📸 Capture app snapshots"
+- **`test:pick`**: thêm option 8 "📸 Capture app snapshots", option 9 "🔬 Scan source code"
 - **`.gitignore`**: thêm `snapshots/` (chứa screenshot store thật)
 - **`GUIDE.md`**: thêm phần 5 hướng dẫn chụp snapshot
 
@@ -39,7 +43,8 @@ Format theo [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **`skills/shopify-test-gen/SKILL.md`**: skill file dạy Claude Code cách sinh test đúng pattern
   - 7 bước rõ ràng: đọc context → phân tích → quyết định → viết POM → viết spec → validate → báo cáo
   - Rules bắt buộc: không hardcode handle, dùng iframe locator, tag @smoke
-- **`skills/shopify-test-gen/examples/`**: ví dụ input/output làm reference
+- **`skills/shopify-test-gen/prompts/`**: prompts cho code-writer, error-analyzer, flow-planner
+- **`skills/shopify-test-gen/references/`**: templates, examples, polaris-playwright-map, app-context
 - **`test:pick`**: thêm option "🤖 Generate new test with AI" vào menu
 
 ---

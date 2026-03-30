@@ -47,4 +47,21 @@ test.describe('compression-image', () => {
       await imageManager.page.locator('iframe[name="app-iframe"]').contentFrame().getByRole('button', { name: 'Compress image' }).click();
       await imageManager.page.getByText('Image optimized successfully').click();
   });
+
+  /**
+   * compression all
+   * @recorded 2026-03-27T08:15:52.990Z
+   */
+  test('compression all', async ({ imageManager }) => {
+    await imageManager.waitForLoad();
+    // Navigation handled by fixture
+      await imageManager.page.getByRole('button', { name: 'hide' }).nth(1).click();
+      await imageManager.page.getByRole('link', { name: 'Image optimizer' }).click();
+      await imageManager.page.locator('iframe[name="app-iframe"]').contentFrame().locator('.Avada-Optimize-Button-suffix-wrapper > .Polaris-Icon > .Polaris-Icon__Svg').click();
+      await imageManager.page.locator('iframe[name="app-iframe"]').contentFrame().getByRole('button', { name: 'Optimize all' }).click();
+      await imageManager.page.locator('iframe[name="app-iframe"]').contentFrame().locator('div').filter({ hasText: /^0%$/ }).nth(1).click();
+      await imageManager.page.locator('iframe[name="app-iframe"]').contentFrame().getByRole('heading', { name: 'Optimization in progress. Get' }).click();
+      await imageManager.page.locator('iframe[name="app-iframe"]').contentFrame().getByRole('button', { name: 'Notify me' }).click();
+      await imageManager.page.locator('iframe[name="app-iframe"]').contentFrame().locator('div').filter({ hasText: 'Total images2726 (100%)' }).nth(3).click();
+  });
 });

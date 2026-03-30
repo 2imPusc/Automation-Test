@@ -22,9 +22,9 @@ Dự án automation testing cho các Shopify app sử dụng [Playwright](https:
 
 ```
 Web UI (localhost:3100)
-    └→ OpenClaw Gateway (localhost:18789, dùng Claude Max)
-            └→ Agent test-gen
-                    ├─ Đọc SKILL.md + .context/ + snapshots/
+    └→ Smart Run: parse Notion task → gen test → verify staging → run
+            └→ Claude Code CLI sinh test
+                    ├─ Đọc SKILL.md + app-context/ + scanned pages
                     └─ Sinh test files vào tests/ + helpers/pages/
 
 Playwright runner
@@ -36,26 +36,7 @@ Playwright runner
 
 ## Cài đặt
 
-### Cách nhanh — dùng OpenClaw (khuyến nghị)
-
-```bash
-# 1. Cài OpenClaw và start
-npm install -g openclaw && openclaw start
-
-# 2. Từ thư mục repo, cài skill setup
-openclaw skill install docs/shopify-autotest-setup.skill
-```
-
-Nhắn agent:
-> "Setup shopify-autotest cho tôi: https://github.com/2imPusc/Automation-Test"
-
-Agent tự detect OS, clone repo, cài dependencies, cấu hình `.env`, tạo agent `test-gen`, và verify. Xem chi tiết: **[SETUP.md](SETUP.md)**
-
----
-
-### Cài thủ công
-
-#### 1. Clone & cài dependencies
+### 1. Clone & cài dependencies
 
 ```bash
 git clone https://github.com/2imPusc/Automation-Test.git shopify-autotest
@@ -64,7 +45,7 @@ npm install
 npx playwright install chromium
 ```
 
-#### 2. Clone source code app (cần cho AI đọc context)
+### 2. Clone source code app (cần cho AI đọc context)
 
 ```bash
 git clone https://gitlab.com/avada/avada-image-optimizer ~/avada-image-optimizer
@@ -72,25 +53,24 @@ git clone https://gitlab.com/avada/seo ~/seo
 git clone https://gitlab.com/avada/blogs ~/blogs
 ```
 
-#### 3. Cấu hình `.env`
+### 3. Cấu hình `.env`
 
 ```bash
 cp .env.example .env
 # Điền: STORE_HANDLE, app handles, staging handles, GITLAB_TOKEN, AVADA_NOTION_TOKEN
 ```
 
-#### 4. Đăng nhập Shopify
+### 4. Đăng nhập Shopify
 
 ```bash
 npm run auth
 ```
 
-#### 5. Setup Web UI
+### 5. Setup Web UI
 
 ```bash
 cd web && npm install
-node ../scripts/get-gateway-token.js  # lấy OPENCLAW_GATEWAY_TOKEN
-# Tạo web/.env.local với token vừa lấy
+# Tạo web/.env.local với AVADA_NOTION_TOKEN và GITLAB_TOKEN
 npm run dev  # http://localhost:3100
 ```
 
@@ -109,10 +89,9 @@ npm run dev  # http://localhost:3100
 ### Terminal
 
 ```bash
-npm run test:generate   # gen test từ Notion task
 npm run test:run        # verify staging + run
 npm run test:smoke      # smoke test nhanh (< 60s)
-npm run test:pick       # menu chọn test suite
+npm run test:pick       # menu chọn test suite (9 options)
 npm run report          # xem HTML report
 ```
 
@@ -122,36 +101,56 @@ npm run report          # xem HTML report
 
 ```
 shopify-autotest/
-├── .env                    # Config local (không commit)
+├── .env                    # Config local (không commit) — chứa cả local + staging handles
 ├── .env.example            # Template
-├── fixtures/index.ts       # Custom Playwright fixtures
+├── fixtures/index.ts       # Custom Playwright fixtures (imageManager)
 ├── helpers/
-│   ├── apps.ts             # Registry app (đọc từ .env)
-│   ├── shopify.ts          # goToApp(), waitForAppLoad()
+│   ├── apps.ts             # Registry app (đọc từ .env, staging dùng prefix STAGING_*)
+│   ├── shopify.ts          # goToApp(), getAppFrame(), waitForAppLoad()
+│   ├── locale.ts           # Locale helpers
 │   └── pages/
 │       ├── BasePage.ts     # Base class POM
 │       └── ImageManagerPage.ts
 ├── scripts/
-│   ├── generate.js         # AI test generator (CLI)
 │   ├── run.js              # Verify staging + run
+│   ├── pick.js             # Menu tương tác (9 options)
+│   ├── setup.js            # Setup wizard (tạo .env)
+│   ├── setup-apps.js       # Setup apps config
 │   ├── notion-context.js   # Đọc Notion task
 │   ├── gitlab-context.js   # MR diff fallback
 │   ├── staging-verify.js   # Kiểm tra staging deploy
 │   ├── snapshot.js         # Chụp UI thật
+│   ├── probe.js            # Probe app pages
+│   ├── scan-source.js      # Scan source code → context
 │   ├── context-sync.js     # Sync source code context
+│   ├── source-loader.js    # Load source files
+│   ├── diff-summary.js     # Git diff summary
+│   ├── generate.legacy.js  # AI test generator (legacy, deprecated)
 │   └── get-gateway-token.js
 ├── skills/
-│   └── shopify-test-gen/SKILL.md   # Rules cho AI
+│   ├── shopify-test-gen/
+│   │   ├── SKILL.md                    # Rules cho AI sinh test
+│   │   ├── prompts/                    # Prompts: code-writer, error-analyzer, flow-planner
+│   │   └── references/                 # App context, templates, examples
+│   │       ├── app-context/avada-plaza/ # Context từng page đã scan
+│   │       ├── apps-registry.json
+│   │       ├── templates.md
+│   │       └── polaris-playwright-map.md
+│   ├── app-context-extractor/          # Tool extract context từ source code
+│   └── skill-creator/                  # Tool tạo skill mới
 ├── tests/
 │   ├── auth.setup.ts
 │   └── avada-plaza/
-│       ├── basic.spec.ts   # Smoke tests
-│       └── compress.spec.ts
-├── web/                    # Next.js Web UI (localhost:3100)
+│       ├── basic.spec.ts               # Smoke tests
+│       ├── compress.spec.ts            # Image compression tests
+│       ├── image-manager-*.spec.ts     # Image manager tests (AI-generated)
+│       ├── image-manager-v2-regression.spec.ts
+│       └── _archive/                   # Archived test specs
+├── recorded-features/                  # Recorded test specs từ Web UI
+├── web/                                # Next.js Web UI (localhost:3100)
 ├── docs/
-│   ├── SETUP.md → xem SETUP.md
-│   ├── FLOW.md → xem FLOW.md
-│   └── shopify-autotest-setup.skill
+│   ├── shopify-autotest-setup.skill
+│   └── test-gen-AGENTS.md
 └── playwright.config.ts
 ```
 
@@ -184,7 +183,6 @@ test('tên test @smoke', async ({ imageManager }) => {
 | App not found | Kiểm tra handle trong `.env` |
 | Session expired | `npm run auth:reset && npm run auth` |
 | Selectors cũ | `npm run test:headed` → xem browser thực tế |
-| test-gen agent 404 | `openclaw gateway restart` |
 | NOTION_TOKEN error | Thêm vào `web/.env.local` |
 
 ---

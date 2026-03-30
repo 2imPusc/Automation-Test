@@ -171,35 +171,18 @@ Máy cần cài [Claude Code CLI](https://claude.ai/code):
 claude --version
 ```
 
-### Cách dùng
+### Cách dùng — Web UI (khuyến nghị)
+
+1. Mở **http://localhost:3100/smart-run**
+2. Paste Notion task link → **Parse**
+3. **Generate Test Cases** — AI đọc source code context + SKILL.md
+4. Chọn Staging → **Kiểm tra** branch deploy
+5. **Run Tests**
+
+### Cách dùng — Terminal (legacy)
 
 ```bash
-npm run test:generate
-```
-
-Wizard sẽ hỏi mô tả. Nhập xong nhấn **Enter 2 lần**:
-
-```
-🤖 AI Test Generator
-─────────────────────────────────────────────────
-Mô tả feature/flow cần test:
-
-App: Avada Plaza
-Trang: Dashboard
-Flow:
-- Mở trang Dashboard
-- Kiểm tra hiển thị số lượng ảnh đã optimize
-- Click nút "View details" và kiểm tra popup mở ra
-
-
-⏳ Claude Code đang phân tích và tạo test...
-─────────────────────────────────────────────────
-
-✅ Đã tạo:
-  - helpers/pages/DashboardPage.ts
-  - tests/avada-plaza/dashboard.spec.ts (2 test cases)
-
-▶ Chạy test ngay? (y/n): y
+npm run test:pick    # chọn option 7: Generate new test with AI
 ```
 
 ### Tips viết mô tả tốt
@@ -240,29 +223,30 @@ Hữu ích khi cần test trên staging trước khi lên production.
 
 ### Cấu hình
 
-Tạo file `.env.staging` (copy từ `.env.example`, điền thông tin staging store):
+Tất cả handles nằm trong **1 file `.env` duy nhất**. Staging dùng prefix `STAGING_`:
 
-```bash
-cp .env.example .env.staging
-# Mở .env.staging và điền STORE_HANDLE + app handles của staging
+```env
+# Local / Production
+AVADA_PLAZA_HANDLE=avada-image-optimizer
+
+# Staging — hệ thống tự đọc key này khi ENV=staging
+STAGING_AVADA_PLAZA_HANDLE=avada-image-optimizer-staging
 ```
 
-Tương tự cho production:
-```bash
-cp .env.example .env.prod
-```
+Không cần tạo file `.env.staging` hay `.env.prod` riêng.
 
-### Đăng nhập từng môi trường
+### Đăng nhập staging (nếu dùng store khác)
 
 ```bash
-npm run auth:staging   # đăng nhập Shopify staging
-npm run auth:prod      # đăng nhập Shopify production
+npm run auth:staging   # đăng nhập Shopify staging store
 ```
+
+Session staging lưu tại `.auth/session.staging.json`. Nếu cùng store thì dùng chung session.
 
 ### Chạy tests
 
 ```bash
-npm run test:staging   # chạy test trên staging
+npm run test:staging   # chạy test trên staging (đọc STAGING_* handles)
 npm run test:prod      # chạy test trên production
 ```
 
@@ -321,9 +305,9 @@ Kiểm tra lại `APP_HANDLE` trong file `.env`:
 npx playwright install chromium
 ```
 
-### `npm run test:generate` báo "Không tìm thấy Claude Code CLI"
+### AI gen test không chạy được
 
-Cài Claude Code: https://claude.ai/code
+Cài Claude Code CLI: https://claude.ai/code — kiểm tra: `claude --version`
 
 ### Lỗi "Cannot find module" khi chạy test
 
@@ -343,8 +327,7 @@ Khi UI app thay đổi:
   npm run snapshot            → chụp lại UI mới để AI dùng
 
 Khi test một feature mới:
-  npm run snapshot            → chụp UI trước (nếu chưa có)
-  npm run test:generate       → mô tả → AI tạo test → chạy luôn
+  Mở localhost:3100/smart-run → paste Notion link → Gen → Run
 
 Khi deploy:
   npm run test:staging        → test trên staging trước

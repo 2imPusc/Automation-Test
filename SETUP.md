@@ -6,11 +6,11 @@ Tài liệu này dành cho **tester** cài đặt lần đầu trên máy cá nh
 
 ## Yêu cầu
 
-| Công cụ | Version | Kiểm tra |
-|---------|---------|---------|
-| Node.js | ≥ 18 | `node --version` |
-| Git | any | `git --version` |
-| OpenClaw | latest | `openclaw --version` |
+| Công cụ | Version | Kiểm tra | Ghi chú |
+|---------|---------|---------|---------|
+| Node.js | ≥ 18 | `node --version` | Bắt buộc |
+| Git | any | `git --version` | Bắt buộc |
+| Claude Code CLI | latest | `claude --version` | Cần cho AI gen test |
 
 ---
 
@@ -28,7 +28,6 @@ npx playwright install chromium
 ## Bước 2 — Clone source code các app
 
 Source code app cần có trên máy để AI đọc context (data-testid, routes, locale...).
-Thư mục clone **phải đặt đúng đường dẫn** trong `apps-registry.json`.
 
 ```bash
 # Avada Plaza (Image Optimizer)
@@ -41,8 +40,8 @@ git clone https://gitlab.com/avada/seo ~/seo
 git clone https://gitlab.com/avada/blogs ~/blogs
 ```
 
-> **Lưu ý:** Nếu đường dẫn khác thì cập nhật `skills/shopify-test-gen/references/apps-registry.json`
-> — sửa `repoPath` cho từng app tương ứng.
+> **Lưu ý:** Nếu đường dẫn khác, cập nhật `repoPath` trong `skills/shopify-test-gen/references/apps-registry.json`.
+> App handles cho test thì cấu hình trong `.env` (xem Bước 3).
 
 ---
 
@@ -57,27 +56,21 @@ cp .env.example .env
 Mở `.env` và điền:
 
 ```env
-# ── Store ─────────────────────────────────────────────
+# ── Store (dùng chung cho mọi môi trường) ────────────
+# Lấy từ URL: admin.shopify.com/store/[STORE_HANDLE]
 STORE_HANDLE=ten-store-shopify-cua-ban
 
-# ── App Handles (Production) ──────────────────────────
+# ── App Handles: Local / Production ──────────────────
+# Lấy từ URL: Admin → Apps → click app → /apps/[handle]
 AVADA_PLAZA_HANDLE=avada-image-optimizer
 SEO_HANDLE=avada-seo-suite
 BLOGS_HANDLE=avada-blogs
 
-# ── App Handles (Staging) ─────────────────────────────
-STAGING_1_AVADA_PLAZA_HANDLE=avada-image-optimizer-staging-1
-STAGING_2_AVADA_PLAZA_HANDLE=avada-image-optimizer-staging-2
-STAGING_3_AVADA_PLAZA_HANDLE=avada-image-optimizer-staging-3
-# ... (lấy handle từ Shopify Admin → Apps → URL)
-
-STAGING_1_SEO_HANDLE=...
-STAGING_2_SEO_HANDLE=...
-# ...
-
-# ── Notion Integration ────────────────────────────────
-# Lấy từ: Notion → Settings → Connections → Develop integrations → Avada integration
-AVADA_NOTION_TOKEN=ntn_...
+# ── App Handles: Staging ─────────────────────────────
+# Dùng prefix STAGING_ — khi chạy ENV=staging, hệ thống tự đọc key này
+STAGING_AVADA_PLAZA_HANDLE=avada-image-optimizer-staging
+STAGING_SEO_HANDLE=seo-staging
+STAGING_BLOGS_HANDLE=blogs-staging
 
 # ── GitLab Integration ────────────────────────────────
 # Lấy từ: GitLab → Avatar → Edit profile → Access Tokens → tạo với scope read_api
@@ -85,35 +78,18 @@ GITLAB_TOKEN=glpat-...
 GITLAB_URL=https://gitlab.com
 ```
 
----
-
-## Bước 4 — Cài đặt OpenClaw
-
-OpenClaw cho phép tester dùng Claude Max (subscription cá nhân) để gen test — không cần API key riêng.
-
-```bash
-npm install -g openclaw
-openclaw auth        # đăng nhập tài khoản Anthropic
-openclaw start       # khởi động OpenClaw daemon
-```
-
-Kiểm tra đang chạy:
-```bash
-openclaw status
-```
-
-> OpenClaw cần chạy **trước khi dùng Web UI** để gen test case hoạt động.
+> **Quan trọng:** Tất cả handles (local + staging) nằm trong **1 file `.env` duy nhất**.
+> Khi chạy `ENV=staging`, hệ thống tự đọc key có prefix `STAGING_` thay vì key thường.
 
 ---
 
-## Bước 5 — Cài đặt Web UI
+## Bước 4 — Cài đặt Web UI
 
 ```bash
 cd web
 npm install
 
-# Tạo file .env.local cho Web UI (tự đồng bộ từ root .env)
-cp ../.env.example .env.example   # chỉ để tham khảo
+# Tạo file .env.local cho Web UI
 cat > .env.local << 'EOF'
 AVADA_NOTION_TOKEN=<dán token Notion vào đây>
 GITLAB_TOKEN=<dán GitLab token vào đây>
@@ -129,7 +105,7 @@ Web UI chạy tại: **http://localhost:3100**
 
 ---
 
-## Bước 6 — Đăng nhập Shopify
+## Bước 5 — Đăng nhập Shopify
 
 ```bash
 # Quay về thư mục gốc
@@ -137,11 +113,11 @@ cd ..
 npm run auth
 ```
 
-Browser mở → đăng nhập Shopify bình thường. Session lưu tự động.
+Browser mở → đăng nhập Shopify bình thường. Session lưu tự động vào `.auth/session.json`.
 
 ---
 
-## Bước 7 — Chạy thử
+## Bước 6 — Chạy thử
 
 ```bash
 npm run test:smoke
@@ -155,64 +131,37 @@ npm run test:smoke
 
 ### Cách 1 — Web UI (khuyến nghị)
 
-1. Đảm bảo OpenClaw đang chạy: `openclaw status`
-2. Đảm bảo Web UI đang chạy: `cd web && npm run dev`
-3. Mở **http://localhost:3100/smart-run**
-4. Paste Notion task link → Parse → Gen test → Verify staging → Run
+1. Đảm bảo Web UI đang chạy: `cd web && npm run dev`
+2. Mở **http://localhost:3100/smart-run**
+3. Paste Notion task link → Parse → Gen test → Verify staging → Run
 
 ### Cách 2 — Terminal
 
 ```bash
-# Gen test mới từ Notion task
-npm run test:generate
-
 # Verify staging + run test
 npm run test:run
 
 # Chỉ run test thủ công
 npm run test:smoke
-npm run test:pick
+npm run test:pick     # menu tương tác 9 options
 ```
 
 ---
 
-## Cấu trúc agent (OpenClaw)
+## Cách AI sinh test hoạt động
 
-Khi dùng Web UI để gen test, hệ thống dùng 2 agent trong OpenClaw:
+Khi dùng Web UI Smart Run hoặc Claude Code CLI để gen test:
 
 ```
-Web UI (localhost:3100)
-  └→ OpenClaw Gateway (localhost:18789)
-        ├─ Agent main   → Booni (hội thoại, điều phối)
-        └─ Agent test-gen → Shopify Test Generator
-                ├─ Workspace: /path/to/shopify-autotest
-                ├─ Đọc skills/shopify-test-gen/SKILL.md (rules)
-                ├─ Đọc .context/[app].md (source code đã extract)
-                ├─ Đọc snapshots/ (DOM thật)
-                └─ Sinh test case + Page Object files
+Web UI (localhost:3100) / Claude Code CLI
+  └→ Claude Code đọc context:
+        ├─ skills/shopify-test-gen/SKILL.md (rules sinh test)
+        ├─ skills/shopify-test-gen/references/app-context/ (source code đã scan)
+        ├─ skills/shopify-test-gen/prompts/ (code-writer, flow-planner, error-analyzer)
+        └─ Sinh test case + Page Object files vào tests/ + helpers/pages/
 ```
 
-**Agent `test-gen`** cần được thêm vào OpenClaw config:
-
-```json
-{
-  "id": "test-gen",
-  "name": "Shopify Test Generator",
-  "workspace": "/path/to/shopify-autotest",
-  "agentDir": "~/.openclaw/agents/test-gen/agent",
-  "model": "anthropic/claude-sonnet-4-6"
-}
-```
-
-Tạo AGENTS.md cho agent tại `~/.openclaw/agents/test-gen/agent/AGENTS.md` — copy từ file mẫu trong repo:
-```bash
-mkdir -p ~/.openclaw/agents/test-gen/agent
-cp docs/test-gen-AGENTS.md ~/.openclaw/agents/test-gen/agent/AGENTS.md
-# Sửa workspace path trong file cho đúng máy của bạn
-```
-
-**Lý do cần OpenClaw:** Claude Max subscription không có API key trực tiếp.
-OpenClaw hoạt động như proxy local — web gọi OpenClaw, OpenClaw gọi Claude với session của bạn.
+**Yêu cầu:** Máy cần cài [Claude Code CLI](https://claude.ai/code) — kiểm tra: `claude --version`
 
 ---
 
@@ -223,12 +172,6 @@ OpenClaw hoạt động như proxy local — web gọi OpenClaw, OpenClaw gọi 
 
 ### `GITLAB_TOKEN not configured`
 → Tạo GitLab Personal Access Token với scope `read_api` (xem Bước 3)
-
-### OpenClaw chưa chạy
-```bash
-openclaw start
-openclaw status    # phải thấy "running"
-```
 
 ### Session Shopify hết hạn
 ```bash
