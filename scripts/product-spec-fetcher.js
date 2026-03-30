@@ -30,9 +30,24 @@ const PRODUCT_DOCS_REF = 'main';
 
 // Map: appKey → base path trong product repo
 const APP_SPEC_PATHS = {
-  avadaPlaza: null,           // chưa có trong product repo — fallback về null
+  avadaPlaza: 'ap-speed-optimizer/features/Feature specification document',
   seo:        'avada-seo-suite/features/Feature specification document',
   blogs:      'seo-on-blog/features/Feature specification document',
+};
+
+// Map: feature name keywords → file name trong product repo (avadaPlaza app)
+// Lưu ý: ap-speed-optimizer dùng file trực tiếp, không có subfolder
+const AVADA_PLAZA_FEATURE_MAP = {
+  'image-manager':      'image-optimizer.md',
+  'image-optimizer':    'image-optimizer.md',
+  'image-seo':          'image-optimizer.md',
+  'compress':           'image-optimizer.md',
+  'manual-compress':    'image-optimizer.md',
+  'speed-up':           'site-speed-up.md',
+  'site-speed':         'site-speed-up.md',
+  'speed-score':        'speed-score.md',
+  'script-manager':     'script-manager.md',
+  'scripts':            'script-manager.md',
 };
 
 // Map: feature name keywords → folder name trong product repo (seo app)
@@ -116,23 +131,69 @@ function writeCache(cacheKey, spec) {
 
 // ── Feature name matching ─────────────────────────────────────────────────────
 
-function matchFeatureFolder(featureName, appKey) {
+/**
+ * Match feature name → spec file path.
+ * - avadaPlaza: files nằm trực tiếp trong base folder (không có subfolder)
+ * - seo: mỗi feature là 1 subfolder chứa 1 file .md
+ * Returns: full file path hoặc null
+ */
+async function matchSpecPath(featureName, appKey) {
+  const basePath = APP_SPEC_PATHS[appKey];
+  const lower = featureName.toLowerCase().replace(/\.md$/, '').replace(/_/g, '-');
+
+  if (appKey === 'avadaPlaza') {
+    // Map trực tiếp → tên file
+    for (const [keyword, fileName] of Object.entries(AVADA_PLAZA_FEATURE_MAP)) {
+      if (lower.includes(keyword)) return `${basePath}/${fileName}`;
+    }
+    // Fallback: fuzzy match từ danh sách file thật trên GitLab
+    try {
+      const entries = await gitlabListTree(basePath, PRODUCT_DOCS_REF);
+      const mdFiles = entries.filter(e => e.type === 'blob' && e.name.endsWith('.md'));
+      const keywords = lower.split('-').filter(w => w.length > 2);
+      let best = null, bestScore = 0;
+      for (const f of mdFiles) {
+        const score = keywords.filter(k => f.name.includes(k)).length;
+        if (score > bestScore) { bestScore = score; best = f.name; }
+      }
+      if (best) return `${basePath}/${best}`;
+    } catch { /* ignore */ }
+    return null;
+  }
+
   if (appKey === 'seo') {
-    const lower = featureName.toLowerCase().replace(/\.md$/, '').replace(/_/g, '-');
-    // Direct map lookup
+    // Map feature → subfolder, rồi tìm file trong subfolder
     for (const [keyword, folder] of Object.entries(SEO_FEATURE_MAP)) {
-      if (lower.includes(keyword)) return folder;
+      if (lower.includes(keyword)) {
+        return findSpecFileInFolder(`${basePath}/${folder}`);
+      }
     }
   }
+
+  if (appKey === 'blogs') {
+    // blogs chưa có map riêng — fuzzy match từ danh sách file
+    try {
+      const entries = await gitlabListTree(basePath, PRODUCT_DOCS_REF);
+      const mdFiles = entries.filter(e => e.type === 'blob' && e.name.endsWith('.md'));
+      const keywords = lower.split('-').filter(w => w.length > 2);
+      let best = null, bestScore = 0;
+      for (const f of mdFiles) {
+        const score = keywords.filter(k => f.name.toLowerCase().includes(k)).length;
+        if (score > bestScore) { bestScore = score; best = f.name; }
+      }
+      if (best) return `${basePath}/${best}`;
+    } catch { /* ignore */ }
+  }
+
   return null;
 }
 
+// Legacy helper dùng bởi seo flow
 async function findSpecFileInFolder(folderPath) {
   try {
     const entries = await gitlabListTree(folderPath, PRODUCT_DOCS_REF);
     const mdFiles = entries.filter(e => e.type === 'blob' && e.name.endsWith('.md'));
     if (!mdFiles.length) return null;
-    // Prefer file không chứa "template" hay "draft"
     const best = mdFiles.find(f => !f.name.includes('template') && !f.name.includes('draft'))
       || mdFiles[0];
     return `${folderPath}/${best.name}`;
@@ -299,19 +360,10 @@ async function fetchProductSpec(appKey, featureName) {
   }
 
   try {
-    // 2. Map feature name → folder
-    const folder = matchFeatureFolder(featureName, appKey);
-    if (!folder) {
-      console.warn(`[product-spec-fetcher] No folder mapping for ${appKey}/${featureName}`);
-      return null;
-    }
-
-    const folderPath = `${basePath}/${folder}`;
-
-    // 3. Find spec file
-    const specFilePath = await findSpecFileInFolder(folderPath);
+    // 2. Map feature name → spec file path
+    const specFilePath = await matchSpecPath(featureName, appKey);
     if (!specFilePath) {
-      console.warn(`[product-spec-fetcher] No spec file in ${folderPath}`);
+      console.warn(`[product-spec-fetcher] No spec mapping for ${appKey}/${featureName}`);
       return null;
     }
 
