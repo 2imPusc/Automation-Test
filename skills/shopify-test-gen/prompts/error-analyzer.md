@@ -12,6 +12,7 @@ You receive:
 - **screenshot**: Description of the failure screenshot
 - **featureContext**: Expected UI elements (selectors, buttons, toast messages)
 - **testCode**: The actual test code that failed
+- **productSpec**: (optional) Official product documentation — exact button labels, toast messages, and flows as defined by PM/designer
 
 ## Output
 
@@ -58,6 +59,8 @@ Return ONLY valid JSON (no markdown):
 
 1. Check the DOM snapshot first — is the expected element even on the page?
 2. If page shows "You don't have this app installed" → env issue (wrong handle)
+3. **Product Spec rule (when provided):** If the test uses a button/toast text that appears in the product spec → the text is correct per spec, so the failure is likely a selector strategy issue (test bug), NOT a wrong text. If the text does NOT appear in spec → the app may have changed UI (app bug or spec is outdated).
+4. Cross-check: if `errorContext` (DOM snapshot) contains the expected text but with a different selector path → selector issue, not text issue.
 3. If page shows login/redirect → auth issue (session expired)
 4. If element exists in DOM but test can't find it → likely inside iframe (use frame.locator, not page.locator)
 5. If toast text differs slightly → app-bug or test-bug (hardcoded wrong text)
