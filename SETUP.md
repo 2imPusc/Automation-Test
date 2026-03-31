@@ -83,19 +83,77 @@ GITLAB_URL=https://gitlab.com
 
 ---
 
+## Bước 3.5 — Cài OpenClaw + Claude Code và lấy Gateway Token
+
+Web UI dùng **OpenClaw** để gọi Claude Code gen test. Cần cài cả hai và lấy token trước khi cấu hình Web UI.
+
+### Cài Claude Code CLI
+
+```bash
+npm install -g @anthropic-ai/claude-code
+# Kiểm tra:
+claude --version
+# Ghi lại đường dẫn:
+which claude   # ví dụ: /home/username/.local/bin/claude
+```
+
+> Nếu chưa có Claude subscription, cần đăng ký tại https://claude.ai
+
+### Cài và khởi động OpenClaw
+
+```bash
+npm install -g openclaw
+openclaw gateway start
+# Kiểm tra:
+openclaw gateway status
+```
+
+### Lấy Gateway Token
+
+```bash
+# Quay về thư mục gốc shopify-autotest
+npm run gateway-token
+```
+
+Output sẽ có dạng:
+```
+OPENCLAW_GATEWAY_URL=http://127.0.0.1:18789
+OPENCLAW_GATEWAY_TOKEN=84c9e2b0bb82f1bd...
+```
+
+**Lưu lại hai giá trị này** — cần dùng ở Bước 4.
+
+---
+
 ## Bước 4 — Cài đặt Web UI
 
 ```bash
 cd web
 npm install
+```
 
-# Tạo file .env.local cho Web UI
+Tạo file `web/.env.local`:
+
+```bash
 cat > .env.local << 'EOF'
 AVADA_NOTION_TOKEN=<dán token Notion vào đây>
 GITLAB_TOKEN=<dán GitLab token vào đây>
 GITLAB_URL=https://gitlab.com
+OPENCLAW_GATEWAY_URL=http://127.0.0.1:18789
+OPENCLAW_GATEWAY_TOKEN=<dán token từ Bước 3.5 vào đây>
+CLAUDE_PATH=<kết quả của: which claude>
 EOF
+```
 
+> **Cách lấy từng giá trị:**
+> - `AVADA_NOTION_TOKEN` — hỏi team lead (Notion integration token, **không phải** personal token)
+> - `GITLAB_TOKEN` — tạo tại GitLab → Avatar → Edit profile → Access Tokens → scope: `read_api`
+> - `OPENCLAW_GATEWAY_TOKEN` — lấy từ output của `npm run gateway-token` (Bước 3.5)
+> - `CLAUDE_PATH` — chạy `which claude` trong terminal, copy kết quả
+
+Khởi động Web UI:
+
+```bash
 npm run dev
 ```
 
@@ -195,12 +253,12 @@ Sau đó chạy lại gen test — context-sync sẽ tự re-extract.
 
 ## Thông tin cần hỏi team để điền .env
 
-| Thông tin | Hỏi ai |
-|-----------|--------|
-| Staging handles (1, 2, 3...) | Dev/DevOps |
-| Avada Notion integration token | Team lead |
-| GitLab URL (nếu self-hosted) | DevOps |
-| Store handle cho test | Dev |
+| Thông tin | Hỏi ai | Ghi chú |
+|-----------|--------|---------|
+| Staging handles (1, 2, 3...) | Dev/DevOps | Prefix `STAGING_1_`, `STAGING_2_`... |
+| `AVADA_NOTION_TOKEN` | Team lead | Notion **integration** token, không phải personal token |
+| GitLab URL (nếu self-hosted) | DevOps | Mặc định: `https://gitlab.com` |
+| Store handle cho test | Dev | Lấy từ URL: `admin.shopify.com/store/[handle]` |
 
 ---
 
