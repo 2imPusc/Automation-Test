@@ -464,4 +464,97 @@ export class ImageManagerPage extends BasePage {
       return match ? parseInt(match[1].replace(/,/g, ''), 10) : 0;
     });
   }
+
+  // ── Locators (compression settings) ──────────────────────────────────────
+
+  /** Shopify contextual save bar — Save button (outside iframe) */
+  get saveBarSaveButton(): Locator {
+    return this.page.getByRole('button', { name: /^save$/i });
+  }
+
+  /** Shopify contextual save bar container */
+  get saveBar(): Locator {
+    return this.page.locator(tLoc('AvadaContextualSaveBar.unsavedTitle'));
+  }
+
+  /** Compression quality select options (SelectOption component) */
+  get compressionQualityOptions(): Locator {
+    return this.frame.locator('.Polaris-Select select').first();
+  }
+
+  /** Confirmation modal (exclude Sidekick) */
+  get confirmationModal(): Locator {
+    return this.frame.locator('[role="dialog"]');
+  }
+
+  /** Confirm button inside a modal dialog */
+  get modalConfirmButton(): Locator {
+    return this.frame.locator('[role="dialog"]').getByRole('button', { name: /confirm|ok|optimize|start|yes/i }).first();
+  }
+
+  // ── Actions (compression settings) ──────────────────────────────────────
+
+  /**
+   * Change the compression quality setting by selecting a different option.
+   * Uses the Polaris Select component inside ImageCompression.
+   */
+  async changeCompressionQuality(targetValue?: string): Promise<void> {
+    return this.step('ImageManager: change compression quality', async () => {
+      const select = this.compressionQualityOptions;
+      await select.waitFor({ state: 'visible', timeout: 10000 });
+
+      // Get current value and pick a different one
+      const currentValue = await select.inputValue();
+      if (targetValue) {
+        await select.selectOption(targetValue);
+      } else {
+        // Cycle through options to pick a different value
+        const options = await select.locator('option').allTextContents();
+        const optionValues = await select.locator('option').evaluateAll(
+          els => els.map(el => (el as HTMLOptionElement).value)
+        );
+        const currentIdx = optionValues.indexOf(currentValue);
+        const nextIdx = (currentIdx + 1) % optionValues.length;
+        await select.selectOption(optionValues[nextIdx]);
+      }
+      console.log('✅ Changed compression quality setting');
+    });
+  }
+
+  /**
+   * Click Save on the Shopify contextual save bar and wait for success toast.
+   */
+  async clickSaveAndWait(): Promise<void> {
+    return this.step('ImageManager: click Save on save bar', async () => {
+      await this.saveBarSaveButton.waitFor({ state: 'visible', timeout: 5000 });
+      await this.saveBarSaveButton.click();
+      // Wait for success toast
+      await this.toast.waitFor({ state: 'visible', timeout: 10000 });
+      console.log('✅ Save bar clicked, toast appeared');
+    });
+  }
+
+  /**
+   * Reload the page and re-navigate to Image Manager.
+   */
+  async reloadPage(): Promise<void> {
+    return this.step('ImageManager: reload page', async () => {
+      await this.page.reload({ waitUntil: 'domcontentloaded' });
+      await this.page.waitForSelector('iframe[name="app-iframe"]', { timeout: 30000 });
+      await this.closeShopifyOverlays();
+      await this.waitForLoad();
+      console.log('✅ Page reloaded');
+    });
+  }
+
+  /**
+   * Get the current compression quality select value.
+   */
+  async getCompressionQualityValue(): Promise<string> {
+    return this.step('ImageManager: get compression quality value', async () => {
+      const select = this.compressionQualityOptions;
+      await select.waitFor({ state: 'visible', timeout: 10000 });
+      return await select.inputValue();
+    });
+  }
 }

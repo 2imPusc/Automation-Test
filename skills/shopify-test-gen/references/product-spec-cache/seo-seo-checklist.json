@@ -1,0 +1,73 @@
+{
+  "cachedAt": 1774839660101,
+  "spec": {
+    "buttons": [
+      "Enable meta rule",
+      "Enable",
+      "Contact us",
+      "Create blog",
+      "View",
+      "Optimize URL",
+      "Update",
+      "Optimize",
+      "Upgrade",
+      "Cannot detected",
+      "Duplicate content"
+    ],
+    "toasts": [],
+    "flows": [
+      {
+        "title": "Bước 1: Mở SEO Checklist",
+        "steps": [
+          "Vào menu **SEO checklist** trong app. Hệ thống tự động scan store và hiển thị kết quả. Nếu là lần đầu, cần chờ vài phút để scan hoàn tất."
+        ]
+      },
+      {
+        "title": "Bước 2: Xem điểm tổng (Overall Score)",
+        "steps": [
+          "Card bên trái hiển thị:",
+          "**Overall score** (0–100) dạng gauge chart",
+          "Label đánh giá có màu: \"Your score is **medium**\" (cam), \"good\" (xanh)...",
+          "**Last scan time** — thời điểm scan gần nhất",
+          "**Task to solve: X** — tổng số issues cần xử lý",
+          "Đếm theo loại: X critical issues / X good results / X cannot detected"
+        ]
+      },
+      {
+        "title": "Bước 3: Xem chi tiết theo category",
+        "steps": [
+          "Card bên phải có **3 tabs**:",
+          "**Content** — meta tags, duplicate content, blog, broken links, H1...",
+          "**Accessibility** — structured data, sitemap, social tags, favicon, indexing...",
+          "**Performance** — lazy loading, minification, image optimization, JS execution...",
+          "Mỗi tab hiển thị:",
+          "**Donut chart** với category score + breakdown: Issues (đỏ), Improvements (cam), Good results (xanh), Cannot detected (xám)",
+          "**Checklist** bên dưới — danh sách issues nhóm theo severity"
+        ]
+      },
+      {
+        "title": "Bước 4: Xem và fix từng issue",
+        "steps": [
+          "Trong Checklist, issues được nhóm thành 3 severity groups:",
+          "**Issue** (đỏ, expand mặc định) — vấn đề cần fix ngay",
+          "**Good result** (xanh, collapse) — đã đạt yêu cầu",
+          "**Cannot detected** (xám, collapse) — không thể kiểm tra (thường do store ��ặt password)",
+          "Mỗi issue hiển thị tên (link màu), mô tả vấn đề, và giải thích tại sao ảnh hưởng đến SEO. Nhấn vào CTA để fix:",
+          "**Enable** — bật tính năng ngay (Lazy Load, Minify, Structured Data...)",
+          "**View** — xem danh sách chi tiết (Broken links, JS errors...)"
+        ]
+      },
+      {
+        "title": "Bước 5: Rescan sau khi fix",
+        "steps": [
+          "Sau khi fix xong các issues, nhấn **Re-scan** trên card Overall Score để chạy lại. Score và issues sẽ cập nhật sau khi scan xong. Có cooldown giữa các lần rescan."
+        ]
+      }
+    ],
+    "edgeCases": [],
+    "rawSpec": "# Shop SEO Checklist\n\n---\n\n## Tổng quan\n\nShop SEO Checklist phân tích hơn 30 yếu tố SEO trên store, chấm điểm tổng 0–100, nhóm thành 3 categories (Content, Accessibility, Performance), và hướng dẫn merchant fix từng issue ngay từ trang checklist. Đây là tính năng trung tâm của app — nơi merchant hiểu \"store đang ở đâu về SEO\" và được dẫn sang các tính năng fix tương ứng.\n\n---\n\n## Tại sao cần Shop SEO Checklist?\n\n### Vấn đề\n\nĐa số merchant biết SEO quan trọng nhưng không biết bắt đầu từ đâu. Store có thể đang mắc hàng chục lỗi SEO — thiếu meta description, ảnh không có alt text, broken links, structured data chưa bật — mà merchant không hề hay biết. Nếu không có công cụ scan tổng thể, merchant phải tự kiểm tra từng trang, từng yếu tố một, hoặc thuê chuyên gia SEO audit với chi phí hàng trăm đến hàng nghìn đô.\n\nKết quả là nhiều store bỏ lỡ organic traffic vì những lỗi SEO cơ bản hoàn toàn có thể fix được. Merchant không thiếu ý chí — họ thiếu một bản đồ rõ ràng chỉ ra đâu là vấn đề và fix bằng cách nào.\n\n### Outcome khi sử dụng\n\n- **Biết chính xác store đang ở đâu về SEO** — điểm số 0–100 và breakdown theo Content, Accessibility, Performance giúp merchant hiểu ngay tình trạng tổng thể\n- **Ưu tiên đúng việc cần làm trước** — issues được phân loại theo severity (Critical / Improvement / Good), merchant fix đúng thứ tự để tăng điểm nhanh nhất\n- **Fix ngay từ checklist, không cần tìm kiếm** — mỗi issue có nút CTA dẫn thẳng đến tính năng fix tương ứng, tiết kiệm hàng giờ tìm hiểu\n- **Theo dõi tiến trình cải thiện** — rescan sau mỗi lần fix để thấy điểm tăng, tạo động lực tiếp tục tối ưu\n- **Thay thế SEO audit thủ công tốn kém** — scan tự động hơn 30 yếu tố, tương đương một buổi audit chuyên nghiệp nhưng miễn phí và chạy bất cứ lúc nào\n\n---\n\n## Cách sử dụng\n\n### Bước 1: Mở SEO Checklist\n\nVào menu **SEO checklist** trong app. Hệ thống tự động scan store và hiển thị kết quả. Nếu là lần đầu, cần chờ vài phút để scan hoàn tất.\n\n### Bước 2: Xem điểm tổng (Overall Score)\n\nCard bên trái hiển thị:\n- **Overall score** (0–100) dạng gauge chart\n- Label đánh giá có màu: \"Your score is **medium**\" (cam), \"good\" (xanh)...\n- **Last scan time** — thời điểm scan gần nhất\n- **Task to solve: X** — tổng số issues cần xử lý\n- Đếm theo loại: X critical issues / X good results / X cannot detected\n\n### Bước 3: Xem chi tiết theo category\n\nCard bên phải có **3 tabs**:\n- **Content** — meta tags, duplicate content, blog, broken links, H1...\n- **Accessibility** — structured data, sitemap, social tags, favicon, indexing...\n- **Performance** — lazy loading, minification, image optimization, JS execution...\n\nMỗi tab hiển thị:\n- **Donut chart** với category score + breakdown: Issues (đỏ), Improvements (cam), Good results (xanh), Cannot detected (xám)\n- **Checklist** bên dưới — danh sách issues nhóm theo severity\n\n### Bước 4: Xem và fix từng issue\n\nTrong Checklist, issues được nhóm thành 3 severity groups:\n- **Issue** (đỏ, expand mặc định) — vấn đề cần fix ngay\n- **Good result** (xanh, collapse) — đã đạt yêu cầu\n- **Cannot detected** (xám, collapse) — không thể kiểm tra (thường do store ��ặt password)\n\nMỗi issue hiển thị tên (link màu), mô tả vấn đề, và giải thích tại sao ảnh hưởng đến SEO. Nhấn vào CTA để fix:\n- **Enable** — bật tính năng ngay (Lazy Load, Minify, Structured Data...)\n- **View** — xem danh sách chi tiết (Broken links, JS errors...)\n- **Optimize** — đến trang tối ưu (Image compression, Alt text...)\n- **Create** — tạo mới (Blog chưa có)\n- **Update** — cập nhật thủ công (Favicon)\n- **Contact us** — liên hệ support (H1 tag, LCP...)\n\n### Bước 5: Rescan sau khi fix\n\nSau khi fix xong các issues, nhấn **Re-scan** trên card Overall Score để chạy lại. Score và issues sẽ cập nhật sau khi scan xong. Có cooldown giữa các lần rescan.\n\n---\n\n## Settings & Options\n\n### Danh sách 30+ SEO Checks\n\n**Content (13 checks)**\n\n| Check | Mô tả | Kết quả | CTA |\n|---|---|---|---|\n| Meta title | Trang có meta title | Good / Issue | Enable meta rule |\n| Meta title length | Độ dài \n<!-- truncated -->",
+    "specFile": "avada-seo-suite/features/Feature specification document/SEO checklist/shop-seo-checklist.md",
+    "summary": "## Buttons\n- \"Enable meta rule\"\n- \"Enable\"\n- \"Contact us\"\n- \"Create blog\"\n- \"View\"\n- \"Optimize URL\"\n- \"Update\"\n- \"Optimize\"\n- \"Upgrade\"\n- \"Cannot detected\"\n- \"Duplicate content\"\n\n## User Flows\n- Bước 1: Mở SEO Checklist\n- Bước 2: Xem điểm tổng (Overall Score)\n- Bước 3: Xem chi tiết theo category\n- Bước 4: Xem và fix từng issue\n- Bước 5: Rescan sau khi fix",
+    "fetchedAt": "2026-03-30T03:01:00.100Z"
+  }
+}

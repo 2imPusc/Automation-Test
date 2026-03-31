@@ -1,8 +1,8 @@
 ---
 app: avadaPlaza
-branch: improve/opt-image-v2
-commit: a9e5abc1
-extracted_at: 2026-03-25
+branch: master
+commit: 3fa09002
+extracted_at: 2026-03-30
 src: /Users/avada/avada-image-optimizer/packages/assets/src
 ---
 

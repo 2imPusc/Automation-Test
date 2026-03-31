@@ -1,0 +1,100 @@
+{
+  "cachedAt": 1774839668085,
+  "spec": {
+    "buttons": [
+      "Upgrade",
+      "View checklist",
+      "Fix",
+      "Get started with SEO Suite Pro",
+      "\"Activate Turbo\"",
+      "Insight",
+      "Explore deals",
+      "Support",
+      "\"Watch now\"",
+      "\"Chat with us\" / \"Read guide\"",
+      "\"Contact us\"",
+      "Task to solve"
+    ],
+    "toasts": [],
+    "flows": [
+      {
+        "title": "Bước 1: Xem Greeting header",
+        "steps": [
+          "Phần trên cùng hiển thị:",
+          "Lời chào cá nhân: \"Hi [Tên merchant]!\" kèm emoji 👋",
+          "Badge plan hiện tại (Free / Pro / Enterprise)",
+          "Số AI credits còn lại (ví dụ: \"100 AI credits\") + link \"Upgrade\""
+        ]
+      },
+      {
+        "title": "Bước 2: Xem SEO Score",
+        "steps": [
+          "Card bên trái hiển thị:",
+          "**Gauge chart** hình tròn với điểm SEO (0–100)",
+          "Trạng thái: good (xanh) / medium (cam) / bad (đỏ)",
+          "\"Last scan time: [ngày giờ]\"",
+          "\"Task to solve: [số]\" — tổng số vấn đề cần xử lý",
+          "Breakdown: critical issues (đỏ), good results (xanh), cannot detected (xám)",
+          "Nút \"View checklist\" → mở trang SEO Checklist"
+        ]
+      },
+      {
+        "title": "Bước 3: Xem Troubleshooting",
+        "steps": [
+          "Card bên phải (cạnh SEO Score) hiển thị danh sách các vấn đề SEO cần sửa:",
+          "Mỗi issue là 1 accordion expand/collapse",
+          "Tiêu đề issue có màu theo mức độ (đỏ = critical, cam = warning)",
+          "Expand để xem mô tả chi tiết + nút \"Fix\" (nếu có) dẫn đến trang xử lý",
+          "Ví dụ issues: Duplicate content, After-list Collection content, Store password, Lazy loading"
+        ]
+      },
+      {
+        "title": "Bước 4: Xem Detailed Report",
+        "steps": [
+          "Dưới SEO Score, hiển thị 3 metric cards ngang hàng:",
+          "| Card              | Hiển thị                                 | Ý nghĩa                                              |",
+          "| ----------------- | ---------------------------------------- | ---------------------------------------------------- |",
+          "| **Performance**   | Số issues + score vòng tròn + trạng thái | Tốc độ tải trang, Core Web Vitals                    |",
+          "| **Accessibility** | Số issues + score vòng tròn + trạng thái | Khả năng truy cập cho người khuyết tật               |",
+          "| **Content**       | Số issues + score vòng tròn + trạng thái | Chất lượng nội dung SEO (meta, alt text, heading...) |"
+        ]
+      },
+      {
+        "title": "Bước 5: Hoàn thành Onboarding checklist",
+        "steps": [
+          "Card \"Get started with SEO Suite Pro\" hiển thị:",
+          "Subtitle: \"6 easy steps to boost your store's visibility, speed, and SEO performance\"",
+          "Progress bar: \"[N] of 6 tasks completed\"",
+          "Menu 3 chấm (···) góc phải + chevron collapse/expand",
+          "6 tasks checklist:",
+          "| #   | Task                            | Mô tả                               | CTA              |"
+        ]
+      },
+      {
+        "title": "Bước 6: Đọc Insights",
+        "steps": [
+          "Card \"Insight\" hiển thị:",
+          "Carousel bài viết/khuyến mãi (prev/next arrows)",
+          "Mỗi slide: hình banner + tiêu đề + mô tả + nút CTA (\"Explore deals\", v.v.)",
+          "Menu 3 chấm (···) góc phải"
+        ]
+      },
+      {
+        "title": "Bước 7: Truy cập Support",
+        "steps": [
+          "Card \"Support\" cuối trang, hiển thị 3 cột:",
+          "| Card            | Icon | Mô tả                                                       | CTA                           |",
+          "| --------------- | ---- | ----------------------------------------------------------- | ----------------------------- |",
+          "| Tutorial videos | ▶    | Xem hướng dẫn SEO checklist, on-page, alt text, broken link | \"Watch now\"                   |",
+          "| Helpdesk        | ?    | Chat trực tiếp với đội hỗ trợ                               | \"Chat with us\" / \"Read guide\" |",
+          "| Remove app      | ✕    | Hướng dẫn gỡ app hoặc liên hệ                               | \"Contact us\"                  |"
+        ]
+      }
+    ],
+    "edgeCases": [],
+    "rawSpec": "# Dashboard\n\n| Field            | Value            |\n| ---------------- | ---------------- |\n| **Product**      | Avada SEO Suite  |\n| **Feature**      | Dashboard (Home) |\n| **Page**         | Dashboard        |\n| **Last updated** | 2026-03-16       |\n| **Author**       | LinhNQ           |\n\n---\n\n## Tổng quan\n\nTrang chủ của app — cung cấp cái nhìn tổng quan về sức khỏe SEO của store, hướng dẫn merchant bắt đầu, và truy cập nhanh đến hỗ trợ. Đây là trang đầu tiên merchant thấy khi mở app.\n\n---\n\n## Cách sử dụng\n\n### Bước 1: Xem Greeting header\n\nPhần trên cùng hiển thị:\n\n- Lời chào cá nhân: \"Hi [Tên merchant]!\" kèm emoji 👋\n- Badge plan hiện tại (Free / Pro / Enterprise)\n- Số AI credits còn lại (ví dụ: \"100 AI credits\") + link \"Upgrade\"\n\n### Bước 2: Xem SEO Score\n\nCard bên trái hiển thị:\n\n- **Gauge chart** hình tròn với điểm SEO (0–100)\n- Trạng thái: good (xanh) / medium (cam) / bad (đỏ)\n- \"Last scan time: [ngày giờ]\"\n- \"Task to solve: [số]\" — tổng số vấn đề cần xử lý\n- Breakdown: critical issues (đỏ), good results (xanh), cannot detected (xám)\n- Nút \"View checklist\" → mở trang SEO Checklist\n\n### Bước 3: Xem Troubleshooting\n\nCard bên phải (cạnh SEO Score) hiển thị danh sách các vấn đề SEO cần sửa:\n\n- Mỗi issue là 1 accordion expand/collapse\n- Tiêu đề issue có màu theo mức độ (đỏ = critical, cam = warning)\n- Expand để xem mô tả chi tiết + nút \"Fix\" (nếu có) dẫn đến trang xử lý\n- Ví dụ issues: Duplicate content, After-list Collection content, Store password, Lazy loading\n\n### Bước 4: Xem Detailed Report\n\nDưới SEO Score, hiển thị 3 metric cards ngang hàng:\n\n| Card              | Hiển thị                                 | Ý nghĩa                                              |\n| ----------------- | ---------------------------------------- | ---------------------------------------------------- |\n| **Performance**   | Số issues + score vòng tròn + trạng thái | Tốc độ tải trang, Core Web Vitals                    |\n| **Accessibility** | Số issues + score vòng tròn + trạng thái | Khả năng truy cập cho người khuyết tật               |\n| **Content**       | Số issues + score vòng tròn + trạng thái | Chất lượng nội dung SEO (meta, alt text, heading...) |\n\nTrạng thái mỗi card: good / medium / bad / very bad.\n\n### Bước 5: Hoàn thành Onboarding checklist\n\nCard \"Get started with SEO Suite Pro\" hiển thị:\n\n- Subtitle: \"6 easy steps to boost your store's visibility, speed, and SEO performance\"\n- Progress bar: \"[N] of 6 tasks completed\"\n- Menu 3 chấm (···) góc phải + chevron collapse/expand\n- 6 tasks checklist:\n\n| #   | Task                            | Mô tả                               | CTA              |\n| --- | ------------------------------- | ----------------------------------- | ---------------- |\n| 1   | Speed up with Turbo             | Bật Turbo mode cho tốc độ           | \"Activate Turbo\" |\n| 2   | Run SEO audit                   | Chạy kiểm tra SEO toàn bộ store     | —                |\n| 3   | Advanced Google Structured Data | Bật structured data nâng cao        | —                |\n| 4   | Optimize meta tags              | Tối ưu meta title/description       | —                |\n| 5   | Connect Google Search Console   | Kết nối GSC để theo dõi search data | —                |\n| 6   | Fix 404 errors                  | Sửa lỗi broken links                | —                |\n\n- Task hoàn thành: icon ✓ xanh\n- Task chưa làm: icon mờ + mô tả + nút CTA + hình minh họa\n\n### Bước 6: Đọc Insights\n\nCard \"Insight\" hiển thị:\n\n- Carousel bài viết/khuyến mãi (prev/next arrows)\n- Mỗi slide: hình banner + tiêu đề + mô tả + nút CTA (\"Explore deals\", v.v.)\n- Menu 3 chấm (···) góc phải\n\n### Bước 7: Truy cập Support\n\nCard \"Support\" cuối trang, hiển thị 3 cột:\n\n| Card            | Icon | Mô tả                                                       | CTA                           |\n| --------------- | ---- | ----------------------------------------------------------- | ----------------------------- |\n| Tutorial videos | ▶    | Xem hướng dẫn SEO checklist,\n<!-- truncated -->",
+    "specFile": "avada-seo-suite/features/Feature specification document/Dashboard/dashboard.md",
+    "summary": "## Buttons\n- \"Upgrade\"\n- \"View checklist\"\n- \"Fix\"\n- \"Get started with SEO Suite Pro\"\n- \"\"Activate Turbo\"\"\n- \"Insight\"\n- \"Explore deals\"\n- \"Support\"\n- \"\"Watch now\"\"\n- \"\"Chat with us\" / \"Read guide\"\"\n- \"\"Contact us\"\"\n- \"Task to solve\"\n\n## User Flows\n- Bước 1: Xem Greeting header\n- Bước 2: Xem SEO Score\n- Bước 3: Xem Troubleshooting\n- Bước 4: Xem Detailed Report\n- Bước 5: Hoàn thành Onboarding checklist\n- Bước 6: Đọc Insights\n- Bước 7: Truy cập Support",
+    "fetchedAt": "2026-03-30T03:01:08.083Z"
+  }
+}
